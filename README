@@ -1,0 +1,22 @@
+A version of the EBM that allows you to specify atmospheric CO2.
+This version includes a polynomial parameterization of outgoing
+longwave radiation and planetary albedo (based on Kasting's RCE model -Jacob
+ 
+--Ethan--
+>run the program by running the python script runEBM.py
+>output located in model/output.dat
+
+>added functionality which couples the energy balance model to a 
+population equation (lines 766-788)
+>added pCO2 adjustments, assuming constant carbon footprint (line 781)
+>Added 10 Inputs to Namelist
+1) N0 = initial population (millions)
+2) rBirth = optimal birth rate (1/yr)
+3) rDeath = optimal death rate (1/yr)
+4) dTpop = exponential ramping time (civilization's fragility)
+5) opT = optimum temperature (resulting in largest growth)
+6) rco2 = per-capita CO2 contributions (carbon footprint)
+7) En = technological capabilities of civilization
+8) coupled = boolean which lets you pick if the EBM should be coupled to the population equation or not
+9) lverbose = boolean which controls terminal output
+10) runTime = number of years to run the program for (same as niter) 
