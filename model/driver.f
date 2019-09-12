@@ -123,11 +123,6 @@ c  INITIALIZE VARIABLES
       nfile = 0
       
       counter=0
-c      NAMELIST /ebm/ seasons, snowball, tend, dt, rot, a, ecc, peri, 
-c     &               obl, cloudir, pco20, ocean, igeog, groundalb, 
-c     &               relsolcon, landsnowfrac, fcloud, d0, N0,
-c     &               rBirth, rDeath, dTpop, opT, rco2, En,
-c     &               coupled, lverbose, runTimee
       NAMELIST /ebm/ a, cloudir, coupled, d0, dt, dTpop, ecc,
      &               En, fcloud, groundalb, igeog, landsnowfrac,
      &               lverbose, N0, obl, ocean, opT, pco20,
@@ -141,7 +136,7 @@ c     &               coupled, lverbose, runTimee
       Npop=N0
       rGrowth=rBirth-rDeath
       tend = tend*runTime
-      write(*,*) rGrowth
+c      write(*,*) rGrowth
 
       if( snowball ) then
         do k = 1, nbelts, 1
