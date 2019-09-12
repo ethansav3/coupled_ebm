@@ -4,6 +4,7 @@ longwave radiation and planetary albedo (based on Kasting's RCE model -Jacob
  
 --Ethan--
 >run the program by running the python script runEBM.py
+>OR use the included jupyter notebook to run and plot simulataneously
 >output located in model/output.dat
 
 >added functionality which couples the energy balance model to a 

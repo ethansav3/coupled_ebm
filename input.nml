@@ -11,7 +11,7 @@
     groundalb = 0.291
     igeog = 1
     landsnowfrac = 1.0
-    lverbose = .true.
+    lverbose = .false.
     n0 = 1042
     obl = 23.5
     ocean = 0.7
@@ -23,8 +23,8 @@
     rdeath = 0.0142857
     relsolcon = 1.0
     rot = 7.27e-05
-    runtime = 100
+    runtime = 200
     seasons = .true.
     snowball = .false.
-    tend = 700000000000.0
+    tend = 31540000.0
 /
