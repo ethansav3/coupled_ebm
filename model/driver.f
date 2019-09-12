@@ -123,11 +123,16 @@ c  INITIALIZE VARIABLES
       nfile = 0
       
       counter=0
-      NAMELIST /ebm/ seasons, snowball, tend, dt, rot, a, ecc, peri, 
-     &               obl, cloudir, pco20, ocean, igeog, groundalb, 
-     &               relsolcon, landsnowfrac, fcloud, d0, N0,
-     &               rBirth, rDeath, dTpop, opT, rco2, En,
-     &               coupled, lverbose, runTime
+c      NAMELIST /ebm/ seasons, snowball, tend, dt, rot, a, ecc, peri, 
+c     &               obl, cloudir, pco20, ocean, igeog, groundalb, 
+c     &               relsolcon, landsnowfrac, fcloud, d0, N0,
+c     &               rBirth, rDeath, dTpop, opT, rco2, En,
+c     &               coupled, lverbose, runTimee
+      NAMELIST /ebm/ a, cloudir, coupled, d0, dt, dTpop, ecc,
+     &               En, fcloud, groundalb, igeog, landsnowfrac,
+     &               lverbose, N0, obl, ocean, opT, pco20,
+     &               peri, rBirth, rco2, rDeath, relsolcon,
+     &               rot, runTime, seasons, snowball, tend
       READ( namelistid, NML=ebm )
       CLOSE( namelistid )
       pco2 = pco20              !initial co2 concentration for this run (bars)
