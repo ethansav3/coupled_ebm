@@ -11,7 +11,7 @@ from matplotlib.ticker import FormatStrFormatter
 
 def plotTruePopCo2(dfPopCo2):
     #true population and co2 data
-    dfPopCo2.population = dfPopCo2.population/1000;
+    if dfPopCo2.population.mean()>15000: dfPopCo2.population = dfPopCo2.population/1000
     co2 = np.asarray(dfPopCo2.co2_ppm)
     population = np.asarray(dfPopCo2.population)
     timeP = np.asarray(dfPopCo2.time)
@@ -30,6 +30,8 @@ def plotTruePopCo2(dfPopCo2):
     
 def compareModelOutput(modelData,dfTemp,dfPopCo2):
     #true population and co2 data
+    if dfPopCo2.population.mean()>15000: 
+        dfPopCo2.population = dfPopCo2.population/1000
     co2 = np.asarray(dfPopCo2.co2_ppm)
     population = np.asarray(dfPopCo2.population)
     timeP = np.asarray(dfPopCo2.time)
