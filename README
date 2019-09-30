@@ -3,9 +3,8 @@ This version includes a polynomial parameterization of outgoing
 longwave radiation and planetary albedo (based on Kasting's RCE model -Jacob
  
 --Ethan--
->run the program by running the python script runEBM.py
->OR use the included jupyter notebook to run and plot simulataneously
->output located in model/output.dat
+RUN PROGRAM AND PLOT RESULTS: open and run all cells from model/ebmFinal.ipynb
+JUST RUN PROGRAM: ./driver (output in output.dat)
 
 >added functionality which couples the energy balance model to a 
 population equation (lines 766-788)
