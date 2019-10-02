@@ -772,10 +772,15 @@ c-------------------Coupling-By-EHS------------------------------------------
          write(*,'(a,f5.0)') ' Counter: ', counter
          write(*,'(a,f8.3)') ' Annual Avg Global Temp: ', ann_tempave
          write(*,'(a,f8.3,a)') ' Population:' ,Npop/1000, ' billion'
-         write(*,'(a,f8.6)') ' Growth Rate: ', rGrowth
+         write(*,*) 'Growth Rate: ', rGrowth
          write(*,'(a,f9.0)') ' pCO2 (ppm)= ',(pco2*10**6)
          write(*,'(a,f9.0)') ' initial pCO2 (ppm) = ',(pco20*10**6)
          write(*,*) ''
+      end if
+
+      if(ann_tempave .ge. 450) then 
+        write(*,*) "Temperatures Exceed Max=450, Abort Program" 
+        stop
       end if
 
       if(coupled) then
