@@ -77,7 +77,7 @@ def compareModelOutput(modelData,dfTemp,dfPopCo2):
     ax3.legend(loc='best');
 
     
-def plotModelOutput(df):
+def plotModelOutput(df,name,eqTime,eqTemp):
     sns.set_style('darkgrid')
     sns.set_context('poster',rc={'font.size': 30.0,
      'axes.labelsize': 26.0,
@@ -96,18 +96,17 @@ def plotModelOutput(df):
     pco2 = pco2*10**6
     
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
-    
+    fig.suptitle("Distance: " + str(name) +" AU,   $T_{eq}$: "+str(eqTemp)+"K",x=.41)
      #plot time vs temp (K)
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
     ax1.set(ylabel='Temperature (K)',xlabel='Time (years)')
     ax1.set_yticks(np.linspace(min(temp),max(temp),4))
-    
     color='black'
     linestyle='--'
     alpha=.5
     
-    ax1.set_xlim(min(timer)-2,max(timer)+2)
+    ax1.set_xlim(min(timer),max(timer))
 
     
     sns.set_style('darkgrid')
@@ -118,9 +117,10 @@ def plotModelOutput(df):
     ax2.set(ylabel='Population (billions)')
     ax2.set_title("Population vs Time")
     ax2.set_yticks(np.linspace(min(pop),max(pop),4))
-    ax2.set_xlim(min(timer)-2,max(timer)+2)
+    ax2.set_xlim(min(timer),max(timer))
 
     fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
+    
     plt.show()
     
 def plotModelInput(nameList):

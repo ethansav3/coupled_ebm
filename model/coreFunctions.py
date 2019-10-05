@@ -64,9 +64,11 @@ def newFolder(nml,dirpath): #delete old runfile and make a new one
     call("ln -s "+notePath+"/driver"+dirpath,shell=True) 
     call("ln -s "+notePath+"/output.dat "+dirpath,shell=True)
     call("ln -s "+notePath+"../input.nml "+dirpath,shell=True)
-    
-    call("./driver",shell=True) #run the driver
     return dirpath
+
+def runProgram(driver): #run the program with the given name
+    call("./"+driver,shell=True) #run the driver
+
 
 def deleteFolder():
     #unlink all symbolic links
@@ -91,7 +93,6 @@ def readOutput():
     #read in population/avgtemp data
     output = open("output.dat","r")
     next(output) #skip the first line (of headers)
-    
     for line in output: #iterates as many years as the program runs
         values = line.split()
         data['time'].append(float(values[0]))
@@ -99,10 +100,20 @@ def readOutput():
         data['pco2'].append(float(values[2]))
         data['pop'].append(float(values[3]))
     
+    #read in equilibrium conditions
+    eqTemp=0;
+    eqTime=0;
+    equilibrium=open("equilibrium.dat","r")
+    for line in equilibrium:
+        values = line.split()
+        eqTime = float(values[0])
+        eqTemp = float(values[1])
+        
+    
     finalavgtemp=data['temp'][len(data['temp'])-1] # determine the final average temp
     
     output.close() # close output file
     
     df = pd.DataFrame(data)
     
-    return df, finalavgtemp
+    return df, finalavgtemp, eqTime,eqTemp
