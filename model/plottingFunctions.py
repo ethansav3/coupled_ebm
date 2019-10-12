@@ -135,6 +135,8 @@ def plotModelInput(nameList):
     gRateList=[]
     bRateList=[]
     dRateList=[]
+    
+    width=5#line thickness
 
     fig,ax=plt.subplots(figsize=(8,5))
     opT = nameList['ebm']['opT']
@@ -146,9 +148,9 @@ def plotModelInput(nameList):
         bRateList.append((1.00/35.90)*exp(-( (ann_tempave-opT)/(dtPop) )**2 ))
         dRateList.append(-(1.00/70.00)*exp(( (ann_tempave-opT)/(dtPop))**2 ))
 
-    plt.plot(tempList,bRateList,label='$r_{birth}$')
-    plt.plot(tempList,gRateList,label='$r$')
-    plt.plot(tempList,dRateList,label='$r_{death}$')
+    plt.plot(tempList,bRateList,label='$r_{birth}$',linewidth=width)
+    plt.plot(tempList,gRateList,label='$r$',linewidth=width)
+    plt.plot(tempList,dRateList,label='$r_{death}$',linewidth=width)
 
     plt.xlabel('Temperature (K)')
 

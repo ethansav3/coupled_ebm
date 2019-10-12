@@ -56,6 +56,7 @@ c----------------------------------------------------------------------c
       real*8 rco2,En, pco20 !Coupling Parameters
       logical :: coupled = .false.
       logical :: lverbose = .false.
+      logical :: equilibrium = .false.
 c
       parameter (nbelts=18)
       parameter (pi=3.14159265,grav=6.6732e-8,msun=1.9891e33)
@@ -123,6 +124,7 @@ c  INITIALIZE VARIABLES
       nfile = 0
       
       counter=0
+      eqCounter=0
       NAMELIST /ebm/ a, cloudir, coupled, d0, dt, dTpop, ecc,
      &               En, fcloud, groundalb, igeog, landsnowfrac,
      &               lverbose, N0, obl, ocean, opT, pco20,
@@ -152,7 +154,7 @@ c  OPEN FILES
       open (unit=17,file='out/co2clouds.out',status='unknown')
 
       open (unit=10,file='output.dat',status='unknown')
-c
+      open (unit=11,file='equilibrium.dat',status='unknown')
       write(10,'(4x,a,6x,a,6x,a,4x,a)') 'Time (s)', 'Temp (K)',
      &                                '  pCO2 (bars)', 'Pop (N)'
 c  WRITE OBLIQUITY TO OUTPUT
@@ -771,18 +773,40 @@ c-------------------Coupling-By-EHS------------------------------------------
          write(*,*) ''
          write(*,'(a,f5.0)') ' Counter: ', counter
          write(*,'(a,f8.3)') ' Annual Avg Global Temp: ', ann_tempave
+         write(*,'(a,f8.5)') ' dT: ', abs(ann_tempave-prevtempave)
          write(*,'(a,f8.3,a)') ' Population:' ,Npop/1000, ' billion'
          write(*,*) 'Growth Rate: ', rGrowth
          write(*,'(a,f9.0)') ' pCO2 (ppm)= ',(pco2*10**6)
          write(*,'(a,f9.0)') ' initial pCO2 (ppm) = ',(pco20*10**6)
+         if(equilibrium) then
+                 write(*,'(a,f8.3,a,f5.0)') " Equilibrium was 
+     &reached at T: ",opT,",  t: ",eqCounter 
+         else
+                 write(*,*) "Equilibrium has not been reached"
+         end if
          write(*,*) ''
       end if
 
-      if(ann_tempave .ge. 450) then 
-        write(*,*) "Temperatures Exceed Max=450, Abort Program" 
-        stop
+      if(ann_tempave .ge. 450) then
+              if(equilibrium) then 
+                write(*,*) "Temperatures Exceed Max=450, Abort Program" 
+                stop
+              else 
+                write(*,*) "Temperatures Exceed Max=450, Abort Program" 
+                write(11,'(f5.0,f8.3)') counter,opT
+                stop
+              end if 
       end if
-
+     
+      if(.not.equilibrium) then
+      if(abs(ann_tempave-prevtempave).lt.0.01) then  
+        opT=ann_tempave
+        eqCounter = counter
+        equilibrium = .true.
+        write(11,'(f5.0,f8.3)') eqCounter,opT
+      end if
+      end if
+      if(equilibrium) then
       if(coupled) then
          rGrowth = En*(rBirth)*exp(-( (ann_tempave-opT)/(dTpop) )**2) 
      &           - En*(rDeath)*exp(( (ann_tempave-opT)/(dTpop))**2 )
@@ -793,6 +817,7 @@ c-------------------Coupling-By-EHS------------------------------------------
       Npop=max( (Npop*(1+rGrowth)) ,0.00)
 c then write data to ouput file (output.dat)
       write(10,'(4e15.5)') tcalc,ann_tempave,pco2,Npop
+      end if
 c------------------------End-of-Coupling-Stuff----------------------------------
 
 c check for convergence
