@@ -43,12 +43,12 @@ def makeDefNamelist():
             'landsnowfrac' : 1.0,
             'fcloud' : 0.50,
             'd0' : 0.58, #initial diffusion coefficient
-            'N0' : 1042,
+            'N0' : 1129,
             'rBirth' : 0.027855,
             'rDeath' : 0.0142857,
             'dTpop' : 10,
             'opT' : 290.5,
-            'rco2' : 3.459e-4,
+            'rco2' : 1.9e-4,#3.459e-4,
             'En' : 1.00,
             'coupled' : True,
             'lverbose' : True,
@@ -66,9 +66,22 @@ def newFolder(nml,dirpath): #delete old runfile and make a new one
     call("ln -s "+notePath+"../input.nml "+dirpath,shell=True)
     return dirpath
 
-def runProgram(driver): #run the program with the given name
-    call("./"+"driver.exe",shell=True) #run the driver
+def runProgram(driver,nameList): #run the program with the given name
+    #make temporary directory to run in
+    with tempfile.TemporaryDirectory() as dirpath:
+        runFolder = newFolder(nameList,dirpath) #make the temporary folder
+        dfModel, finalavgtemp, eqTime, eqTemp = readOutput() #read output into datframe
+        os.chdir(notePath)
+        call("rm -rf tmp*", shell=True)#delete the temporary folder and unlink it's contents
+        print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime))
+        print('Final Temp(K): ' + str(finalavgtemp));
+        print('Final Temp(C): ' + str(round(finalavgtemp-273.15)));
+        print('')
+        call("echo   ", shell=True)
+        call("echo End of Python Notebook Reached",shell=True)
 
+    call("./"+driver,shell=True) #run the driver
+    return dfModel, finalavgtemp, eqTime, eqTemp
 
 def deleteFolder():
     #unlink all symbolic links
