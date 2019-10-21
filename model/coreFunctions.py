@@ -67,7 +67,7 @@ def newFolder(nml,dirpath): #delete old runfile and make a new one
     return dirpath
 
 def runProgram(driver): #run the program with the given name
-    call("./"+driver,shell=True) #run the driver
+    call("./"+"driver.exe",shell=True) #run the driver
 
 
 def deleteFolder():
