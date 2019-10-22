@@ -22,6 +22,23 @@ def printFolder():
         for dirname in dirs:
             print(dirname)
             
+def runProgram(driver,nameList): #run the program with the given name  
+    #make temporary directory to run in
+    with tempfile.TemporaryDirectory() as dirpath:
+        runFolder = newFolder(nameList,dirpath) #make the temporary folder
+        call("./"+driver,shell=True) #run the driver
+        dfModel, finalavgtemp, eqTime, eqTemp = readOutput() #read output into datframe
+        os.chdir(notePath)
+        call("rm -rf tmp*", shell=True)#delete the temporary folder and unlink it's contents
+        print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime))
+        print('Final Temp(K): ' + str(finalavgtemp));
+     #   print('Final Temp(C): ' + str(round(finalavgtemp-273.15)));
+        print('')
+        call("echo   ", shell=True)
+        call("echo End of Python Notebook Reached",shell=True)
+
+    return dfModel, finalavgtemp, eqTime, eqTemp
+            
 def makeDefNamelist():
     nml = {
         'ebm': {
@@ -65,6 +82,7 @@ def newFolder(nml,dirpath): #delete old runfile and make a new one
     call("ln -s "+notePath+"/output.dat "+dirpath,shell=True)
     call("ln -s "+notePath+"../input.nml "+dirpath,shell=True)
     return dirpath
+
 def deleteFolder():
     #unlink all symbolic links
     call("unlink driver",shell=True)
@@ -94,38 +112,31 @@ def readOutput():
         data['temp'].append(float(values[1]))
         data['pco2'].append(float(values[2]))
         data['pop'].append(float(values[3]))
+   
+    equilibrium = None 
+    try:
+        finalavgtemp=data['temp'][len(data['temp'])-1] # determine the final average tem
+        equilibrium=True
+    except IndexError:
+        finalavgtemp=None
+        print("Temperatures Exceeded 450 before equilibrium was reached")
+        equilibrium = False
     
-    #read in equilibrium conditions
-    eqTemp=0;
-    eqTime=0;
-    equilibrium=open("equilibrium.dat","r")
-    for line in equilibrium:
-        values = line.split()
-        eqTime = float(values[0])
-        eqTemp = float(values[1])
-        
-    
-    finalavgtemp=data['temp'][len(data['temp'])-1] # determine the final average temp
-    
+    if(equilibrium):
+        #read in equilibrium conditions
+        eqTemp=0;
+        eqTime=0;
+        equilibrium=open("equilibrium.dat","r")
+        for line in equilibrium:
+            values = line.split()
+            eqTime = float(values[0])
+            eqTemp = float(values[1])
+    else:
+        eqTemp = None
+        eqTime = None
+           
     output.close() # close output file
     
     df = pd.DataFrame(data)
     
     return df, finalavgtemp, eqTime,eqTemp
-
-def runProgram(driver,nameList): #run the program with the given name
-    #make temporary directory to run in
-    with tempfile.TemporaryDirectory() as dirpath:
-        runFolder = newFolder(nameList,dirpath) #make the temporary folder
-        dfModel, finalavgtemp, eqTime, eqTemp = readOutput() #read output into datframe
-        os.chdir(notePath)
-        call("rm -rf tmp*", shell=True)#delete the temporary folder and unlink it's contents
-        print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime))
-        print('Final Temp(K): ' + str(finalavgtemp));
-        print('Final Temp(C): ' + str(round(finalavgtemp-273.15)));
-        print('')
-        call("echo   ", shell=True)
-        call("echo End of Python Notebook Reached",shell=True)
-
-    call("./"+driver,shell=True) #run the driver
-    return dfModel, finalavgtemp, eqTime, eqTemp
