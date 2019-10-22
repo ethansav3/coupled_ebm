@@ -8,7 +8,52 @@ import shutil
 import sys
 from matplotlib.ticker import FormatStrFormatter
 
+def plotModelOutput(df,name,eqTime,eqTemp):
+    sns.set_style('darkgrid')
+    sns.set_context('poster',rc={'font.size': 30.0,
+     'axes.labelsize': 26.0,
+     'axes.titlesize': 24.0,
+     'xtick.labelsize': 26.0,
+     'ytick.labelsize': 26.0,
+     'legend.fontsize': 22.0})
+    timer = np.asarray(df['time'])
+    temp = np.asarray(df['temp'])
+    pop = np.asarray(df['pop'])
+    pco2=np.asarray(df['pco2'])
+    
+    timer = timer/60/60/24/365.25; #convert secons to years
+    timer = timer+1820;
+    pop = pop/1000
+    pco2 = pco2*10**6
+    
+    fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
+    fig.suptitle("Distance: " + str(name) +" AU,   $T_{eq}$: "+str(eqTemp)+"K",x=.41)
+     #plot time vs temp (K)
+    line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
+    ax1.set_title('Temperature vs Time')
+    ax1.set(ylabel='Temperature (K)',xlabel='Time (years)')
+    ax1.set_yticks(np.linspace(min(temp),max(temp),4))
+    color='black'
+    linestyle='--'
+    alpha=.5
+    
+    ax1.set_xlim(min(timer),max(timer))
 
+    
+    sns.set_style('darkgrid')
+
+    #plot time vs pop    
+    line2 = ax2.scatter(timer,pop,c=pco2,cmap='jet')
+    
+    ax2.set(ylabel='Population (billions)')
+    ax2.set_title("Population vs Time")
+    ax2.set_yticks(np.linspace(min(pop),max(pop),4))
+    ax2.set_xlim(min(timer),max(timer))
+
+    fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
+    
+    plt.show()
+    
 def plotTruePopCo2(dfPopCo2):
     #true population and co2 data
     if dfPopCo2.population.mean()>15000: dfPopCo2.population = dfPopCo2.population/1000
@@ -75,53 +120,6 @@ def compareModelOutput(modelData,dfTemp,dfPopCo2):
     ax3.plot(modelTime,modelTemp,c='black', label='Model Temp');
     ax3.set_title("Temp vs Time");
     ax3.legend(loc='best');
-
-    
-def plotModelOutput(df,name,eqTime,eqTemp):
-    sns.set_style('darkgrid')
-    sns.set_context('poster',rc={'font.size': 30.0,
-     'axes.labelsize': 26.0,
-     'axes.titlesize': 24.0,
-     'xtick.labelsize': 26.0,
-     'ytick.labelsize': 26.0,
-     'legend.fontsize': 22.0})
-    timer = np.asarray(df['time'])
-    temp = np.asarray(df['temp'])
-    pop = np.asarray(df['pop'])
-    pco2=np.asarray(df['pco2'])
-    
-    timer = timer/60/60/24/365.25; #convert secons to years
-    timer = timer+1820;
-    pop = pop/1000
-    pco2 = pco2*10**6
-    
-    fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
-    fig.suptitle("Distance: " + str(name) +" AU,   $T_{eq}$: "+str(eqTemp)+"K",x=.41)
-     #plot time vs temp (K)
-    line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
-    ax1.set_title('Temperature vs Time')
-    ax1.set(ylabel='Temperature (K)',xlabel='Time (years)')
-    ax1.set_yticks(np.linspace(min(temp),max(temp),4))
-    color='black'
-    linestyle='--'
-    alpha=.5
-    
-    ax1.set_xlim(min(timer),max(timer))
-
-    
-    sns.set_style('darkgrid')
-
-    #plot time vs pop    
-    line2 = ax2.scatter(timer,pop,c=pco2,cmap='jet')
-    
-    ax2.set(ylabel='Population (billions)')
-    ax2.set_title("Population vs Time")
-    ax2.set_yticks(np.linspace(min(pop),max(pop),4))
-    ax2.set_xlim(min(timer),max(timer))
-
-    fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
-    
-    plt.show()
     
 def plotModelInput(nameList):
     sns.set_style('darkgrid')

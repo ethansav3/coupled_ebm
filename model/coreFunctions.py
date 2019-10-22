@@ -26,8 +26,11 @@ def runProgram(driver,nameList): #run the program with the given name
     #make temporary directory to run in
     with tempfile.TemporaryDirectory() as dirpath:
         runFolder = newFolder(nameList,dirpath) #make the temporary folder
+        
         call("./"+driver,shell=True) #run the driver
+        
         dfModel, finalavgtemp, eqTime, eqTemp = readOutput() #read output into datframe
+        
         os.chdir(notePath)
         call("rm -rf tmp*", shell=True)#delete the temporary folder and unlink it's contents
         print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime))
@@ -118,7 +121,7 @@ def readOutput():
         finalavgtemp=data['temp'][len(data['temp'])-1] # determine the final average tem
         equilibrium=True
     except IndexError:
-        finalavgtemp=None
+        finalavgtemp=np.NaN
         print("Temperatures Exceeded 450 before equilibrium was reached")
         equilibrium = False
     
@@ -132,11 +135,14 @@ def readOutput():
             eqTime = float(values[0])
             eqTemp = float(values[1])
     else:
-        eqTemp = None
-        eqTime = None
+        eqTemp = np.NaN
+        eqTime = np.NaN
            
     output.close() # close output file
-    
+       
     df = pd.DataFrame(data)
     
+    df['time_yrs'] = df['time']/60/60/24/365.25
+    df['pco2_ppm'] = df['pco2']*10**6
+ 
     return df, finalavgtemp, eqTime,eqTemp
