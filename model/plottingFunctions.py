@@ -8,7 +8,7 @@ import shutil
 import sys
 from matplotlib.ticker import FormatStrFormatter
 
-def plotModelOutput(df,inputs,eqTime,eqTemp,popStats):
+def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,show,saveName):
     sns.set_style('darkgrid')
     sns.set_context('poster',rc={'font.size': 30.0,
      'axes.labelsize': 26.0,
@@ -65,8 +65,9 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats):
     fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
     ax2.legend(loc='best')
     ax1.legend(loc='lower right')
-    plt.show()
-    
+    if(save): plt.savefig("../plots/"+str(saveName)+".png")
+    if(show): plt.show()
+
 def plotTruePopCo2(dfPopCo2):
     #true population and co2 data
     if dfPopCo2.population.mean()>15000: dfPopCo2.population = dfPopCo2.population/1000
