@@ -683,7 +683,7 @@ c ZONAL SEASONAL AVERAGES
       write(*,*) 'Final Avg Temp: ', ann_tempave
       write(*,*) 'Final Avg Albedo: ', ann_albave
       write(*,'(a,e15.5,a)') ' Population:' ,Npop/1000, ' billion'
-      write(*,'(a,f9.3,a)') ' Distance: ',(relsolcon)**(-1/2), " AU"
+      write(*,'(a,f9.3,a)') ' Distance: ',sqrt(relsolcon)**(-1), " AU"
       write(*,'(a,f9.0)') ' Initial pCO2: ', pco20*10**6
       write(*,'(a,f9.0)') ' Final pCO2: ', pco2*10**6
       write(*,*) 'Coupling: ',coupled
