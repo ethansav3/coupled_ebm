@@ -37,7 +37,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats):
     linestyle='--'
     alpha=.5
     
-    ax1.set_xlim(min(timer),max(timer))
+    ax1.set_xlim(min(timer),min(timer)+inputs[2])
 
     
     sns.set_style('darkgrid')
@@ -59,7 +59,8 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats):
     ax1.axvline(x=(popStats['maxTime']+1820),c=(0,.7,0),linestyle='--',label="$t_{max}=$"+str(round((popStats['maxTime']+1820),1)))
     ax2.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c=(.7,0,0))
     ax1.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c=(.7,0,0),label="$t_{1/2}^{+}=$"+str(round((popStats['UhalfTime']+1820),1))) 
-    ax2.set_xlim(min(timer),max(timer))
+    
+    ax2.set_xlim(min(timer),min(timer)+inputs[2])
     ax2.set_ylim(min(pop),popStats['maxPopPlot'])
     fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
     ax2.legend(loc='best')
