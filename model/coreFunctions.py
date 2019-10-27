@@ -29,18 +29,21 @@ def runProgram(driver,nameList): #run the program with the given name
         
         call("./"+driver,shell=True) #run the driver
         
-        dfModel, finalavgtemp, eqTime, eqTemp = readOutput() #read output into datframe
+        dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = readOutput() #read output into datframe
         
         os.chdir(notePath)
         call("rm -rf tmp*", shell=True)#delete the temporary folder and unlink it's contents
-        print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime))
-        print('Final Temp(K): ' + str(finalavgtemp));
+        if(equilibrium):
+            print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime)) 
+            print('Final Temp(K): ' + str(finalavgtemp));
+        else:
+            print("Equilibrium was not reached")
      #   print('Final Temp(C): ' + str(round(finalavgtemp-273.15)));
         print('')
         call("echo   ", shell=True)
         call("echo End of Python Notebook Reached",shell=True)
 
-    return dfModel, finalavgtemp, eqTime, eqTemp
+    return dfModel, finalavgtemp, eqTime, eqTemp, equilibrium
             
 def makeDefNamelist():
     nml = {
@@ -105,7 +108,13 @@ def readOutput():
     data['pco2'] = []
     data['pop']  = []
     finalavgtemp=0;
-    
+    equilibrium = None 
+
+    if(os.path.getsize('output.dat')==3):
+        equilibrium = False
+    else:
+        equilibrium = True
+        
     #read in population/avgtemp data
     output = open("output.dat","r")
     next(output) #skip the first line (of headers)
@@ -116,13 +125,12 @@ def readOutput():
         data['pco2'].append(float(values[2]))
         data['pop'].append(float(values[3]))
    
-    equilibrium = None 
     try:
         finalavgtemp=data['temp'][len(data['temp'])-1] # determine the final average tem
         equilibrium=True
     except IndexError:
         finalavgtemp=np.NaN
-        print("Temperatures Exceeded 450 before equilibrium was reached")
+#        print("Temperatures Exceeded 450 before equilibrium was reached")
         equilibrium = False
     
     if(equilibrium):
@@ -141,8 +149,8 @@ def readOutput():
     output.close() # close output file
        
     df = pd.DataFrame(data)
-    
+ 
     df['time_yrs'] = df['time']/60/60/24/365.25
     df['pco2_ppm'] = df['pco2']*10**6
  
-    return df, finalavgtemp, eqTime,eqTemp
+    return df, finalavgtemp, eqTime,eqTemp,equilibrium

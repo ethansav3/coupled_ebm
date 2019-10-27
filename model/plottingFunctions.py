@@ -8,7 +8,7 @@ import shutil
 import sys
 from matplotlib.ticker import FormatStrFormatter
 
-def plotModelOutput(df,name,eqTime,eqTemp):
+def plotModelOutput(df,inputs,eqTime,eqTemp,popStats):
     sns.set_style('darkgrid')
     sns.set_context('poster',rc={'font.size': 30.0,
      'axes.labelsize': 26.0,
@@ -27,7 +27,7 @@ def plotModelOutput(df,name,eqTime,eqTemp):
     pco2 = pco2*10**6
     
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
-    fig.suptitle("Distance: " + str(name) +" AU,   $T_{eq}$: "+str(eqTemp)+"K",x=.41)
+    fig.suptitle("Distance: " + str(inputs[0]) +" AU,  $pCO_{2}$: " + str(inputs[1]) +",  $T_{eq}$: "+str(eqTemp)+"K",x=.41)
      #plot time vs temp (K)
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
@@ -47,9 +47,14 @@ def plotModelOutput(df,name,eqTime,eqTemp):
     
     ax2.set(ylabel='Population (billions)')
     ax2.set_title("Population vs Time")
-    ax2.set_yticks(np.linspace(min(pop),max(pop),4))
+    ax2.set_yticks(np.linspace(min(pop),popStats['maxPopPlot'],4))
+    ax2.axhline(y=popStats['maxPop'],c='black')
+    ax2.axhline(y=popStats['halfPop'],c='black',linestyle='--')
+            
+    ax2.axvline(x=(popStats['maxTime']+1820),ymin=min(pop),ymax=popStats['maxPop'],c='black')
+    ax2.axvline(x=(popStats['halfTime']+1820),ymin=min(pop),ymax=popStats['maxPop'],c='black')
     ax2.set_xlim(min(timer),max(timer))
-
+    ax2.set_ylim(min(pop),popStats['maxPopPlot'])
     fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
     
     plt.show()
