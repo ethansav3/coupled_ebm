@@ -36,6 +36,7 @@ def runProgram(driver,nameList): #run the program with the given name
         if(equilibrium):
             print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime)) 
             print('Final Temp(K): ' + str(finalavgtemp));
+            print('Final Temp(F): ' + str(round((finalavgtemp-273.15)*(9/5)+32, 2)));
         else:
             print("Equilibrium was not reached")
      #   print('Final Temp(C): ' + str(round(finalavgtemp-273.15)));
