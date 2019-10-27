@@ -155,9 +155,7 @@ c  OPEN FILES
 
       open (unit=10,file='output.dat',status='unknown')
       open (unit=11,file='equilibrium.dat',status='unknown')
-      write(10,'(4x,a,6x,a,6x,a,4x,a)') 'Time (s)', 'Temp (K)',
-     &                                '  pCO2 (bars)', 'Pop (N)'
-c  WRITE OBLIQUITY TO OUTPUT
+c     WRITE OBLIQUITY TO OUTPUT
       write(15,2) 'OBLIQUITY: ', obl, ' degrees'
  2    format(/ a,f5.2,a)
 c
@@ -772,12 +770,15 @@ c-------------------Coupling-By-EHS------------------------------------------
       if(lverbose) then
          write(*,*) ''
          write(*,'(a,f5.0)') ' Counter: ', counter
-         write(*,'(a,f8.3)') ' Annual Avg Global Temp: ', ann_tempave
-         write(*,'(a,f8.5)') ' dT: ', abs(ann_tempave-prevtempave)
-         write(*,'(a,f8.3,a)') ' Population:' ,Npop/1000, ' billion'
+         write(*,'(a,f5.1)') ' % completion: ', (counter/runTime)*(100)
+         write(*,'(a,e15.5)') ' Annual Avg Global Temp: ', ann_tempave
+         write(*,'(a,e15.5)') ' dT: ', abs(ann_tempave-prevtempave)
+         write(*,'(a,e15.5,a)') ' Population:' ,Npop/1000, ' billion'
          write(*,*) 'Growth Rate: ', rGrowth
          write(*,'(a,f9.0)') ' pCO2 (ppm)= ',(pco2*10**6)
          write(*,'(a,f9.0)') ' initial pCO2 (ppm) = ',(pco20*10**6)
+         write(*,'(a,f9.3,a)') ' Distance: ',(relsolcon)**(-1/2), " AU"
+         
          if(equilibrium) then
                  write(*,'(a,f8.3,a,f5.0)') " Equilibrium was 
      &reached at T: ",opT,",  t: ",eqCounter 
@@ -787,22 +788,36 @@ c-------------------Coupling-By-EHS------------------------------------------
          write(*,*) ''
       end if
 
-      if(ann_tempave .ge. 450) then
-              if(equilibrium) then 
-                write(*,*) "Temperatures Exceed Max=450, Abort Program" 
-                stop
-              else 
-                write(*,*) "Temperatures Exceed Max=450, Abort Program" 
-                write(11,'(f5.0,f8.3)') counter,opT
-                stop
-              end if 
+      if(ann_tempave .ge. 450) then 
+        write(*,*) "Temperatures Exceed Max=450, Abort Program"
+        if(.not.equilibrium) then
+                write(10,*) 
+        end if
+        stop
       end if
-     
+      if(pco2 .lt. 10e-5) then
+        write(*,*) "pco2 too low min=10ppm, abort program"
+        if(.not.equilibrium) then
+                write(10,*) 
+        end if
+        stop
+      end if
+      if(pco2 .gt. 10) then
+        write(*,*) "pco2 too high max=10^7ppm, abort program"
+        if(.not.equilibrium) then
+                write(10,*) 
+        end if
+        stop
+      end if
+c check if equilibrium has been reached, if yes, then start coupling     
       if(.not.equilibrium) then
       if(abs(ann_tempave-prevtempave).lt.0.01) then  
         opT=ann_tempave
         eqCounter = counter
         equilibrium = .true.
+        write(10,'(4x,a,6x,a,6x,a,4x,a)') 'Time (s)', 'Temp (K)',
+     &                                '  pCO2 (bars)', 'Pop (N)'
+c
         write(11,'(f5.0,f8.3)') eqCounter,opT
       end if
       end if
@@ -814,7 +829,11 @@ c-------------------Coupling-By-EHS------------------------------------------
       else
          rGrowth=rBirth-rDeath
       end if
-      Npop=max( (Npop*(1+rGrowth)) ,0.00)
+      if(Npop.ge.1.00) then
+        Npop=max( (Npop*(1+rGrowth)) ,0.00)
+      else if(Npop.lt.1.00) then
+        Npop=0
+      end if
 c then write data to ouput file (output.dat)
       write(10,'(4e15.5)') tcalc,ann_tempave,pco2,Npop
       end if
