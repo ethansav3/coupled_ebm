@@ -682,10 +682,11 @@ c ZONAL SEASONAL AVERAGES
       print *, "SH/NH temperature difference = ", shtempave - nhtempave
       write(*,*) 'Final Avg Temp: ', ann_tempave
       write(*,*) 'Final Avg Albedo: ', ann_albave
-      write(*,*) 'Final Population: ', Npop 
+      write(*,'(a,e15.5,a)') ' Population:' ,Npop/1000, ' billion'
       write(*,'(a,f9.3,a)') ' Distance: ',(relsolcon)**(-1/2), " AU"
-      write(*,*) 'initial pCO2: ', pco20*10**6
-      write(*,*) 'Final pCO2: ', pco2*10**6
+      write(*,'(a,f9.0)') ' Initial pCO2: ', pco20*10**6
+      write(*,'(a,f9.0)') ' Final pCO2: ', pco2*10**6
+      write(*,*) 'Coupling: ',coupled
       zntempave(nbelts+1) = zntempave(nbelts)  !**for ice-line calculation
 c
 c  FIND ICE-LINES (ANNUAL-AVERAGE TEMP < 263.15K)
