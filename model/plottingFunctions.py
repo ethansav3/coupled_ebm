@@ -27,7 +27,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats):
     pco2 = pco2*10**6
     
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
-    fig.suptitle("Distance: " + str(inputs[0]) +" AU,  $pCO_{2}$: " + str(inputs[1]) +",  $T_{eq}$: "+str(eqTemp)+"K",x=.41)
+    fig.suptitle("Distance: " + str(inputs[0]) +" AU,  $pCO_{2}$: " + str(round(inputs[1])) +"ppm,  $T_{eq}$: "+str(eqTemp)+"K",x=.41)
      #plot time vs temp (K)
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
@@ -48,15 +48,22 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats):
     ax2.set(ylabel='Population (billions)')
     ax2.set_title("Population vs Time")
     ax2.set_yticks(np.linspace(min(pop),popStats['maxPopPlot'],4))
-    ax2.axhline(y=popStats['maxPop'],c='black')
-    ax2.axhline(y=popStats['halfPop'],c='black',linestyle='--')       
-    ax2.axvline(x=(popStats['LhalfTime']+1820),c='black',linestyle='--')
-    ax2.axvline(x=(popStats['UhalfTime']+1820),c='black',linestyle='--') 
-    ax2.axvline(x=(popStats['maxTime']+1820),c='black')
+    sns.set_palette('colorblind') 
+    #horizontal lines
+    ax2.axhline(y=popStats['maxPop'],c='black',linestyle='--',label='$N_{max}=$'+str(round(popStats['maxPop'],1))+" billion")
+    ax2.axhline(y=popStats['halfPop'],c='black',linestyle=':',label='$N_{max}=$'+str(round(popStats['halfPop'],1))+" billion")       
+    #vertical lines
+    ax2.axvline(x=(popStats['LhalfTime']+1820),linestyle='--',c=(0,0,.7))
+    ax1.axvline(x=(popStats['LhalfTime']+1820),linestyle='--',c=(0,0,.7),label="$t_{1/2}^{-}=$"+str(round((popStats['LhalfTime']+1820),1)))
+    ax2.axvline(x=(popStats['maxTime']+1820),c=(0,.7,0),linestyle='--') 
+    ax1.axvline(x=(popStats['maxTime']+1820),c=(0,.7,0),linestyle='--',label="$t_{max}=$"+str(round((popStats['maxTime']+1820),1)))
+    ax2.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c=(.7,0,0))
+    ax1.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c=(.7,0,0),label="$t_{1/2}^{+}=$"+str(round((popStats['UhalfTime']+1820),1))) 
     ax2.set_xlim(min(timer),max(timer))
     ax2.set_ylim(min(pop),popStats['maxPopPlot'])
     fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
-    
+    ax2.legend(loc='best')
+    ax1.legend(loc='lower right')
     plt.show()
     
 def plotTruePopCo2(dfPopCo2):

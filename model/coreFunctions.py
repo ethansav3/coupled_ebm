@@ -15,6 +15,48 @@ from matplotlib.ticker import FormatStrFormatter
 
 notePath = os.getcwd()
 
+def analyzeRun(dfModel,nameList,verbose):
+    maxima = dfModel.max();#find maxima from all columns in df
+    maxPop = maxima[3];#find maxima in population column, peak popultion
+    #print(maxPop)#peak population
+    maxPopIndex = dfModel.loc[dfModel['pop']==maxPop].index#search rows for index of max pop
+    maxPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
+
+    halfPop=maxPop/2;
+    halfPopIndex = dfModel.loc[dfModel['pop']==halfPop].index#search rows for index of max pop
+    halfPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
+    #print(maxPop/2)
+    #while newDF.shape[0]>=2:
+    #     newDF= dfModel.loc[(dfModel['pop'] > (halfPop-dP)) & (dfModel['pop'] < (halfPop+dP))]
+    #     dT+=1
+    #     print("dT: "+ str(dT))
+    LhalfPop=0;
+    UhalfPop=0;
+    dP=50
+    count=1
+    while True:    
+        newDF= dfModel.loc[(dfModel['pop'] > (halfPop-dP)) & (dfModel['pop'] < (halfPop+dP))]
+        if(newDF.shape[0]>=2):
+            break
+        dP+=100
+        count+=5
+    try:
+        if(nameList['ebm']['coupled']):
+            LhalfPop = newDF.time_yrs.iloc[0]  #new dataframe, time column, first index
+            UhalfPop = newDF.time_yrs.iloc[-1]      #new dataframe, time column, last row
+    except TypeError:
+        print('')
+
+    #maxPopPlot=40
+    #dictionary of population statistics
+    popStats={'maxPop' : (maxPop/1000), 'maxTime': maxPopTime.mean(),
+              'halfPop': (halfPop/1000),'LhalfTime': LhalfPop, 'UhalfTime': UhalfPop,
+              'maxPopPlot': maxPop/1000}#maximum plotting range for population
+    if(verbose):
+        for k,v in popStats.items():
+            print(k + " = " +str(v))
+    return popStats
+
 def printFolder():
     for root, dirs, files in os.walk('.'):
         for filename in files:

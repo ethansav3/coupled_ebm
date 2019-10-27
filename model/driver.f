@@ -795,14 +795,15 @@ c-------------------Coupling-By-EHS------------------------------------------
         end if
         stop
       end if
-      if(pco2 .lt. 10e-5) then
+      if(pco2*10**6 .lt. 10) then
         write(*,*) "pco2 too low min=10ppm, abort program"
+        write(*,*) "(current pco2 ",pco2*10**6,")"
         if(.not.equilibrium) then
                 write(10,*) 
         end if
         stop
       end if
-      if(pco2 .gt. 10) then
+      if(pco2*10**6 .gt. 10**7) then
         write(*,*) "pco2 too high max=10^7ppm, abort program"
         if(.not.equilibrium) then
                 write(10,*) 
