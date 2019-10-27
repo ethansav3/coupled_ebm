@@ -49,10 +49,9 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats):
     ax2.set_title("Population vs Time")
     ax2.set_yticks(np.linspace(min(pop),popStats['maxPopPlot'],4))
     ax2.axhline(y=popStats['maxPop'],c='black')
-    ax2.axhline(y=popStats['halfPop'],c='black',linestyle='--')
-            
-    ax2.axvline(x=(popStats['LhalfPop']+1820),c='black',linestyle='--')
-    ax2.axvline(x=(popStats['UhalfPop']+1820),c='black',linestyle='--') 
+    ax2.axhline(y=popStats['halfPop'],c='black',linestyle='--')       
+    ax2.axvline(x=(popStats['LhalfTime']+1820),c='black',linestyle='--')
+    ax2.axvline(x=(popStats['UhalfTime']+1820),c='black',linestyle='--') 
     ax2.axvline(x=(popStats['maxTime']+1820),c='black')
     ax2.set_xlim(min(timer),max(timer))
     ax2.set_ylim(min(pop),popStats['maxPopPlot'])
