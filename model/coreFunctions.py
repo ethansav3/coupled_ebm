@@ -25,7 +25,7 @@ def analyzeRun(dfModel,nameList,verbose):
     halfPop=maxPop/2;
     halfPopIndex = dfModel.loc[dfModel['pop']==halfPop].index#search rows for index of max pop
     halfPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
-    #print(maxPop/2)
+    print("maxPop: "+  str(maxPop))
     #while newDF.shape[0]>=2:
     #     newDF= dfModel.loc[(dfModel['pop'] > (halfPop-dP)) & (dfModel['pop'] < (halfPop+dP))]
     #     dT+=1
@@ -33,13 +33,14 @@ def analyzeRun(dfModel,nameList,verbose):
     LhalfPop=0;
     UhalfPop=0;
     dP=50
-    count=1
+    print('test')
     while True:    
         newDF= dfModel.loc[(dfModel['pop'] > (halfPop-dP)) & (dfModel['pop'] < (halfPop+dP))]
         if(newDF.shape[0]>=2):
             break
-        dP+=100
-        count+=5
+        dP+=50
+#        print(str(dP)+": "+str(newDF.shape[0]))
+#        print(newDF)
     try:
         if(nameList['ebm']['coupled']):
             LhalfPop = newDF.time_yrs.iloc[0]  #new dataframe, time column, first index
@@ -47,7 +48,9 @@ def analyzeRun(dfModel,nameList,verbose):
     except TypeError:
         print('')
 
+    print('test')
     #maxPopPlot=40
+
     #dictionary of population statistics
     popStats={'maxPop' : (maxPop/1000), 'maxTime': maxPopTime.mean(),
               'halfPop': (halfPop/1000),'LhalfTime': LhalfPop, 'UhalfTime': UhalfPop,
@@ -64,7 +67,7 @@ def printFolder():
         for dirname in dirs:
             print(dirname)
             
-def runProgram(driver,nameList): #run the program with the given name  
+def runProgram(driver,nameList,output): #run the program with the given name  
     #make temporary directory to run in
     with tempfile.TemporaryDirectory() as dirpath:
         runFolder = newFolder(nameList,dirpath) #make the temporary folder
@@ -75,12 +78,13 @@ def runProgram(driver,nameList): #run the program with the given name
         
         os.chdir(notePath)
         call("rm -rf tmp*", shell=True)#delete the temporary folder and unlink it's contents
-        if(equilibrium):
-            print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime)) 
-            print('Final Temp(K): ' + str(finalavgtemp));
-            print('Final Temp(F): ' + str(round((finalavgtemp-273.15)*(9/5)+32, 2)));
-        else:
-            print("Equilibrium was not reached")
+        if(output):
+            if(equilibrium):
+                print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime)) 
+                print('Final Temp(K): ' + str(finalavgtemp));
+                print('Final Temp(F): ' + str(round((finalavgtemp-273.15)*(9/5)+32, 2)));
+            else:
+                print("Equilibrium was not reached")
      #   print('Final Temp(C): ' + str(round(finalavgtemp-273.15)));
         print('')
         call("echo   ", shell=True)
