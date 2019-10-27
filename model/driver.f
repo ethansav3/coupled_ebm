@@ -682,8 +682,10 @@ c ZONAL SEASONAL AVERAGES
       print *, "SH/NH temperature difference = ", shtempave - nhtempave
       write(*,*) 'Final Avg Temp: ', ann_tempave
       write(*,*) 'Final Avg Albedo: ', ann_albave
-      write(*,*) 'Final Population: ', Npop
-      write(*,*) 'Final pCO2: ', pco2
+      write(*,*) 'Final Population: ', Npop 
+      write(*,'(a,f9.3,a)') ' Distance: ',(relsolcon)**(-1/2), " AU"
+      write(*,*) 'initial pCO2: ', pco20*10**6
+      write(*,*) 'Final pCO2: ', pco2*10**6
       zntempave(nbelts+1) = zntempave(nbelts)  !**for ice-line calculation
 c
 c  FIND ICE-LINES (ANNUAL-AVERAGE TEMP < 263.15K)
@@ -803,8 +805,9 @@ c-------------------Coupling-By-EHS------------------------------------------
         end if
         stop
       end if
-      if(pco2*10**6 .gt. 10**7) then
+      if(pco2*10**6 .ge. 10**7) then
         write(*,*) "pco2 too high max=10^7ppm, abort program"
+        write(*,*) "(current pco2 ",pco2*10**6,")"
         if(.not.equilibrium) then
                 write(10,*) 
         end if

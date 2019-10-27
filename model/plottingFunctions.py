@@ -6,9 +6,10 @@ from statistics import *
 from math import *
 import shutil
 import sys
+import locale
 from matplotlib.ticker import FormatStrFormatter
 
-def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,show,saveName):
+def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName):
     sns.set_style('darkgrid')
     sns.set_context('poster',rc={'font.size': 30.0,
      'axes.labelsize': 26.0,
@@ -16,6 +17,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,show,saveName):
      'xtick.labelsize': 26.0,
      'ytick.labelsize': 26.0,
      'legend.fontsize': 22.0})
+    locale.setlocale(locale.LC_ALL, '')
     timer = np.asarray(df['time'])
     temp = np.asarray(df['temp'])
     pop = np.asarray(df['pop'])
@@ -27,7 +29,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,show,saveName):
     pco2 = pco2*10**6
     
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
-    fig.suptitle("Distance: " + str(inputs[0]) +" AU,  $pCO_{2}$: " + str(round(inputs[1])) +"ppm,  $T_{eq}$: "+str(eqTemp)+"K",x=.41)
+    fig.suptitle("Distance: " + str(inputs[0]) +" AU,  $pCO_{2}$: " + str( '{:,}'.format(round(inputs[1])) ) +"ppm,  $T_{eq}$: "+str(eqTemp)+"K",x=.41)
      #plot time vs temp (K)
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
@@ -66,7 +68,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,show,saveName):
     ax2.legend(loc='best')
     ax1.legend(loc='lower right')
     if(save): plt.savefig("../plots/"+str(saveName)+".png")
-    if(show): plt.show()
+    plt.show()
 
 def plotTruePopCo2(dfPopCo2):
     #true population and co2 data
