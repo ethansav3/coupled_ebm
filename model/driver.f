@@ -122,7 +122,6 @@ c  INITIALIZE VARIABLES
       landsnowfrac = 1.0 !snowfall fraction on land
       fcloud = 0.5     !fractional cloud cover
       nfile = 0
-      
       counter=0
       eqCounter=0
       NAMELIST /ebm/ a, cloudir, coupled, d0, dt, dTpop, ecc,
@@ -682,10 +681,10 @@ c ZONAL SEASONAL AVERAGES
       print *, "SH/NH temperature difference = ", shtempave - nhtempave
       write(*,*) 'Final Avg Temp: ', ann_tempave
       write(*,*) 'Final Avg Albedo: ', ann_albave
-      write(*,'(a,e15.5,a)') ' Population:' ,Npop/1000, ' billion'
-      write(*,'(a,f9.3,a)') ' Distance: ',sqrt(relsolcon)**(-1), " AU"
+      write(*,'(a,e15.5,a)') ' Final Population:' , Npop/1000, ' billn'
       write(*,'(a,f9.0)') ' Initial pCO2: ', pco20*10**6
       write(*,'(a,f9.0)') ' Final pCO2: ', pco2*10**6
+      write(*,'(a,f9.3,a)') ' Distance: ',sqrt(relsolcon)**(-1), " AU"
       write(*,*) 'Coupling: ',coupled
       zntempave(nbelts+1) = zntempave(nbelts)  !**for ice-line calculation
 c
@@ -839,6 +838,7 @@ c
       else if(Npop.lt.1.00) then
         Npop=0
       end if
+
 c then write data to ouput file (output.dat)
       write(10,'(4e15.5)') tcalc,ann_tempave,pco2,Npop
       end if

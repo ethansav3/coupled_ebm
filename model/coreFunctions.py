@@ -15,35 +15,6 @@ from matplotlib.ticker import FormatStrFormatter
 
 notePath = os.getcwd()
 
-def habitableZone(nameList,newPco2,newA,runTime):
-    fullMaxPop=0;
-    coupled=False
-    count=0
-    minA=0;
-    maxA=0;
-    while(True):
-        relsolcon=newA**-2
-        nameList['ebm']['coupled']=coupled
-        nameList['ebm']['pco20']=newPco2/10**6#convert pco2 to bars
-        nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
-        nameList['ebm']['runTime'] = runTime#change runtime
-        dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram("driver.exe",nameList,False)#False=no output
-        maxima = dfModel.max()
-        maxPop = maxima[3]
-        if(maxPop > fullMaxPop):
-            fullMaxPop = maxPop
-        life = (equilibrium) and (eqTemp<=373.15) and (eqTemp>=273.15)#determine habitability
-        if(life and (count==0)):#if first habitable distance, make it minA
-            minA = newA
-            count+=1
-        if(life and (count > 0)):#in the habitable zone, make it maxA
-            maxA = newA
-        if((not life) and (count>0)):#if out of habitable zone, break out of loop
-            break
-        newA += .01
-    return minA, maxA, fullMaxPop
-
-
 def analyzeRun(dfModel,nameList,verbose):
     maxima = dfModel.max();#find maxima from all columns in df
     maxPop = maxima[3];#find maxima in population column, peak popultion
@@ -54,7 +25,6 @@ def analyzeRun(dfModel,nameList,verbose):
     halfPop=maxPop/2;
     halfPopIndex = dfModel.loc[dfModel['pop']==halfPop].index#search rows for index of max pop
     halfPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
-    print("maxPop: "+  str(maxPop))
     #while newDF.shape[0]>=2:
     #     newDF= dfModel.loc[(dfModel['pop'] > (halfPop-dP)) & (dfModel['pop'] < (halfPop+dP))]
     #     dT+=1
@@ -62,7 +32,6 @@ def analyzeRun(dfModel,nameList,verbose):
     LhalfPop=0;
     UhalfPop=0;
     dP=50
-    print('test')
     while True:    
         newDF= dfModel.loc[(dfModel['pop'] > (halfPop-dP)) & (dfModel['pop'] < (halfPop+dP))]
         if(newDF.shape[0]>=2):
@@ -77,7 +46,6 @@ def analyzeRun(dfModel,nameList,verbose):
     except TypeError:
         print('')
 
-    print('test')
     #maxPopPlot=40
 
     #dictionary of population statistics
@@ -88,6 +56,36 @@ def analyzeRun(dfModel,nameList,verbose):
         for k,v in popStats.items():
             print(k + " = " +str(v))
     return popStats
+
+def habitableZone(nameList,newPco2,newA,runTime,dA):
+    fullMaxPop=0;
+    coupled=True
+    count=0
+    minA=0;
+    maxA=0;
+    maxPop=0;
+    while(True):
+        relsolcon=newA**-2
+        nameList['ebm']['coupled']=coupled
+        nameList['ebm']['pco20']=newPco2/10**6#convert pco2 to bars
+        nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
+        nameList['ebm']['runTime'] = runTime#change runtime
+        dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram("driver.exe",nameList,False)#False=no output
+        if coupled and equilibrium:
+            popStats = analyzeRun(dfModel,nameList,False)
+            maxPop = popStats["maxPop"]
+            if(maxPop >= fullMaxPop):
+                fullMaxPop = maxPop
+        life = (equilibrium) and (eqTemp<=373.15) and (eqTemp>=273.15)#determine habitability
+        if(life and (count==0)):#if first habitable distance, make it minA
+            minA = newA
+            count+=1
+        if(life and (count > 0)):#in the habitable zone, make it maxA
+            maxA = newA
+        if((not life) and (count>0)):#if out of habitable zone, break out of loop
+            break
+        newA += dA
+    return minA, maxA, fullMaxPop
 
 def printFolder():
     for root, dirs, files in os.walk('.'):
@@ -112,13 +110,12 @@ def runProgram(driver,nameList,output): #run the program with the given name
                 print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime)) 
                 print('Final Temp(K): ' + str(finalavgtemp));
                 print('Final Temp(F): ' + str(round((finalavgtemp-273.15)*(9/5)+32, 2)));
+                print('')
             else:
                 print("Equilibrium was not reached")
+                print('')
      #   print('Final Temp(C): ' + str(round(finalavgtemp-273.15)));
-        print('')
         call("echo   ", shell=True)
-        call("echo End of Python Notebook Reached",shell=True)
-
     return dfModel, finalavgtemp, eqTime, eqTemp, equilibrium
             
 def makeDefNamelist():
