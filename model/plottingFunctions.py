@@ -56,17 +56,17 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName):
     ax2.axhline(y=popStats['halfPop'],c='black',linestyle=':',label='$N_{max}=$'+str(round(popStats['halfPop'],1))+" billion")       
     #vertical lines
     ax2.axvline(x=(popStats['LhalfTime']+1820),linestyle='--',c=(0,0,.7))
-    ax1.axvline(x=(popStats['LhalfTime']+1820),linestyle='--',c=(0,0,.7),label="$t_{1/2}^{-}=$"+str(round((popStats['LhalfTime']+1820),1)))
+    ax1.axvline(x=(popStats['LhalfTime']+1820),linestyle='--',c=(0,0,.7),label="$t_{1/2}^{-}=$"+str(int((popStats['LhalfTime']+1820))))
     ax2.axvline(x=(popStats['maxTime']+1820),c=(0,.7,0),linestyle='--') 
-    ax1.axvline(x=(popStats['maxTime']+1820),c=(0,.7,0),linestyle='--',label="$t_{max}=$"+str(round((popStats['maxTime']+1820),1)))
+    ax1.axvline(x=(popStats['maxTime']+1820),c=(0,.7,0),linestyle='--',label="$t_{max}=$"+str(int((popStats['maxTime']+1820))))
     ax2.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c=(.7,0,0))
-    ax1.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c=(.7,0,0),label="$t_{1/2}^{+}=$"+str(round((popStats['UhalfTime']+1820),1))) 
+    ax1.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c=(.7,0,0),label="$t_{1/2}^{+}=$"+str(int((popStats['UhalfTime']+1820)))) 
     
     ax2.set_xlim(min(timer),min(timer)+inputs[2])
     ax2.set_ylim(min(pop),popStats['maxPopPlot'])
     fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
-    ax2.legend(loc='best')
-    ax1.legend(loc='lower right')
+    ax2.legend(loc='best', prop={'size': 30})
+    ax1.legend(loc='lower right', prop={'size': 30})
     if(save): plt.savefig("../plots/"+str(saveName)+".png")
     plt.show()
 

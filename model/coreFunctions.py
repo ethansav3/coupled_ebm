@@ -59,6 +59,7 @@ def analyzeRun(dfModel,nameList,verbose):
 
 def habitableZone(nameList,newPco2,newA,runTime,dA):
     fullMaxPop=0;
+    fullMaxPopA=0;
     coupled=True
     count=0
     minA=0;
@@ -76,6 +77,7 @@ def habitableZone(nameList,newPco2,newA,runTime,dA):
             maxPop = popStats["maxPop"]
             if(maxPop >= fullMaxPop):
                 fullMaxPop = maxPop
+                fullMaxPopA = newA
         life = (equilibrium) and (eqTemp<=373.15) and (eqTemp>=273.15)#determine habitability
         if(life and (count==0)):#if first habitable distance, make it minA
             minA = newA
@@ -85,7 +87,7 @@ def habitableZone(nameList,newPco2,newA,runTime,dA):
         if((not life) and (count>0)):#if out of habitable zone, break out of loop
             break
         newA += dA
-    return minA, maxA, fullMaxPop
+    return round(minA,2), round(maxA,2), fullMaxPop, fullMaxPopA
 
 def printFolder():
     for root, dirs, files in os.walk('.'):
