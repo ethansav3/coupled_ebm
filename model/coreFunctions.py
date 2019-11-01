@@ -72,17 +72,17 @@ def habitableZone(nameList,newPco2,newA,runTime,dA):
         nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
         nameList['ebm']['runTime'] = runTime#change runtime
         dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram("driver.exe",nameList,False)#False=no output
-        if coupled and equilibrium:
-            popStats = analyzeRun(dfModel,nameList,False)
-            maxPop = popStats["maxPop"]
-            if(maxPop >= fullMaxPop):
-                fullMaxPop = maxPop
-                fullMaxPopA = newA
         life = (equilibrium) and (eqTemp<=373.15) and (eqTemp>=273.15)#determine habitability
         if(life and (count==0)):#if first habitable distance, make it minA
             minA = newA
             count+=1
         if(life and (count > 0)):#in the habitable zone, make it maxA
+            if coupled:
+                popStats = analyzeRun(dfModel,nameList,False)
+                maxPop = popStats["maxPop"]
+                if(maxPop >= fullMaxPop):
+                    fullMaxPop = maxPop
+                    fullMaxPopA = newA
             maxA = newA
         if((not life) and (count>0)):#if out of habitable zone, break out of loop
             break
