@@ -142,12 +142,16 @@ def makeDefNamelist():
             'fcloud' : 0.50,
             'd0' : 0.58, #initial diffusion coefficient
             'N0' : 1129,
-            'rBirth' : 0.027855,
-            'rDeath' : 0.0142857,
+            'rBirthTech0' : 0.02,
+            'rBirthMax' : 0.83,
+            'rDeath0' : 0.015,
+            'pBirth' : 1.00,
+            'pDeath' : 1.00,
             'dTpop' : 10,
             'opT' : 290.5,
             'rco2' : 1.9e-4,#3.459e-4,
             'En' : 1.00,
+            'fragility' : 1.00,
             'coupled' : True,
             'lverbose' : True,
             'runTime' : 100
@@ -182,6 +186,8 @@ def readOutput():
     data['temp'] = []
     data['pco2'] = []
     data['pop']  = []
+    data['rBirth'] = []
+    data['rDeath'] = []
     finalavgtemp=0;
     equilibrium = None 
 
@@ -199,6 +205,8 @@ def readOutput():
         data['temp'].append(float(values[1]))
         data['pco2'].append(float(values[2]))
         data['pop'].append(float(values[3]))
+        data['rBirth'].append(float(values[4]))
+        data['rDeath'].append(float(values[5]))
    
     try:
         finalavgtemp=data['temp'][len(data['temp'])-1] # determine the final average tem
