@@ -188,6 +188,7 @@ def readOutput():
     data['pop']  = []
     data['rBirth'] = []
     data['rDeath'] = []
+    data['rGrowth'] = []
     finalavgtemp=0;
     equilibrium = None 
 
@@ -207,6 +208,7 @@ def readOutput():
         data['pop'].append(float(values[3]))
         data['rBirth'].append(float(values[4]))
         data['rDeath'].append(float(values[5]))
+        data['rGrowth'].append(float(values[6]))
    
     try:
         finalavgtemp=data['temp'][len(data['temp'])-1] # determine the final average tem
