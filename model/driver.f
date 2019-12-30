@@ -140,7 +140,7 @@ c  INITIALIZE VARIABLES
       oblrad = obl*pi/180
       Npop   = N0
       rBirth = rBirthTech0
-      rGrowth = rBirthTech0 - rDeath0
+      rGrowth = rBirth - rDeath0
       tend = tend*runTime
 
       if( snowball ) then
@@ -690,9 +690,9 @@ c ZONAL SEASONAL AVERAGES
       write(*,'(a,f9.0)') ' Final pCO2: ', pco2*10**6
       write(*,'(a,f9.3,a)') ' Distance: ',sqrt(relsolcon)**(-1), " AU"
       write(*,*) 'Coupling: ',coupled
-      write(*,'(a,f9.3)') ' Overall dPCO2: ', (pco2-pco20)*10**6
+      write(*,'(a,f15.3)') ' Overall dPCO2: ', (pco2-pco20)*10**6
       write(*,'(a,f9.3)') ' Initial Birth Rate: ',rBirthTech0
-      write(*,'(a,f9.3)') ' Final Birth Rate: ',rBirthTech
+      write(*,'(a,f9.3)') ' Final Birth Rate: ',rBirth
       write(*,'(a,f9.3)') ' Overall dTemp: ', (ann_tempave-opT)
       write(*,'(a,f9.3)') ' Initial Death Rate: ',rDeath0
       write(*,'(a,f9.3)') ' Final Death Rate: ',rDeath
@@ -781,7 +781,7 @@ c
       nstep = 0
       if(last) stop
 c-------------------Coupling-By-EHS------------------------------------------
-      dRBTech = rBirthTech - rBirthTech0
+      dRBTech = rBirth - rBirthTech0
       dRDeath = rDeath - rDeath0
       if(lverbose) then
          write(*,*) ''
@@ -797,7 +797,7 @@ c-------------------Coupling-By-EHS------------------------------------------
          write(*,'(a,f9.6)') ' rBirthMax: ',rBirthMax
          write(*,'(a,f9.6)') ' rBirth: ',rBirth
          write(*,'(a,f9.6)') ' rDeath: ',rDeath
-         write(*,'(a,f15.6)') ' rGrowth: ',rGrowth
+         write(*,'(a,f15.6)') ' rBirth-rDeath: ',rBirth-rDeath
          write(*,'(a,f15.6)') ' rBirthTech: ',rBirthTech
          write(*,'(a,f15.6)') ' rDeath - rDeath0: ',dRDeath
          write(*,'(a,f15.6)') ' rBirthTech - rBirthTech0: ',dRBTech
@@ -856,27 +856,32 @@ c          rGrowth=(rBirthNaked + rBirthTech) - rDeath
 c        rBirthTech = rBirthTech + En*pco2/pco20
 c         rDeath = rDeath + exp( (  ((ann_tempave-opt)**2)/fragility))-1
     
-         rBirthTech = rBirthTech0 + En*((pco2-pco20)*10**6)**pBirth
-         rDeath = rDeath0 + fragility*(ann_tempave-opT)**pDeath
-      
-      if(rBirthTech <= rBirthMax) then 
-         rBirth =  rBirthTech    
-         rGrowth = rBirth - rDeath
-         Npop=max( rGrowth*Npop + Npop ,0.00)
-c        rGrowth = min(abs(rBirthNaked+rBirthTech),rBirthMax) - rDeath 
+c         rBirthTech = rBirthTech0 + En*((pco2-pco20)*10**6)
+c     &                             *(1-(rBirthTech/rBirthMax))**pBirth 
+c         rDeath = rDeath0 + fragility*(ann_tempave-opT)**pDeath
+
+      rBirth= rBirthTech0+En*((pco2-pco20)*10**6)**pBirth
+c      rBirth = rBirth0 + rBirthTech0*Npop*Exp(-En*(pco2-pco20)*10**6)
+      rDeath = rDeath0 + fragility*(ann_tempave-opT)**pDeath
+     
+      if(rBirth <= rBirthMax) then     
+        rGrowth = rBirth - rDeath
+        Npop=max(rGrowth*Npop + Npop ,0.01)
       else
          maxReached = .true.
-         rBirth = rBirthMax
-         rGrowth = rBirth - rDeath
-         Npop=max( rGrowth + Npop ,0.00)
-      end if!carrying capacity growth rate
-        pco2=max( (pco2+(rco2*Npop)/10**6) , 0.00)
+         rGrowth = rBirthMax - rDeath
+         Npop=max(rGrowth + Npop ,0.01)
+      end if!carrying capacity on the growth rate
+
       else
+        rBirth = rBirthTech0
         rGrowth = rBirthTech0 - rDeath0
-      end if !end if equilbrium
+      end if !end if coupled
 
 c then write data to ouput file (output.dat)
-      write(10,'(6e15.5)') tcalc,ann_tempave,pco2,Npop,rBirth,rDeath
+      pco2=max( (pco2+(rco2*Npop)/10**6) , 0.00)
+      write(10,'(7e20.10)') tcalc,ann_tempave,pco2,
+     &                    Npop,rBirth,rDeath,rGrowth
       end if ! if equilibrium
 c------------------------End-of-Coupling-Stuff----------------------------------
 
