@@ -786,7 +786,6 @@ c
 c-------------------Coupling-By-EHS------------------------------------------
       dRBTech = rBirth - rBirth0
       dRDeath = rDeath - rDeath0
-      En = rTech*(Npop-Npoprev)**3+1
       if(lverbose) then
          write(*,*) ''
          write(*,'(a,f5.0)') ' Counter: ', counter
@@ -886,7 +885,7 @@ c constant growth rates
       rDeath = rDeath0
       rGrowth = (rBirth - rDeath)*(1-Npop/Nmax)
       Npoprev = Npop
-      Npop = max(Npop*(1+En*rGrowth), 1.00)
+      Npop = max(Npop*(1+rGrowth), 1.00)
       else
         rBirth = rBirthTech0
         rGrowth = rBirthTech0 - rDeath0

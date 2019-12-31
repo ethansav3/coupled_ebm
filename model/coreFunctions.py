@@ -38,8 +38,6 @@ def analyzeRun(dfModel,nameList,verbose):
         newDF= dfModel.loc[(dfModel['pop'] > (halfPop-dP)) & (dfModel['pop'] < (halfPop+dP))]
         if(newDF.shape[0]>=2):
             break
-        if counter > 50:
-            break
         dP+=50
 #        print(str(dP)+": "+str(newDF.shape[0]))
 #        print(newDF)
