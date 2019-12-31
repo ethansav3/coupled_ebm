@@ -16,6 +16,7 @@ from matplotlib.ticker import FormatStrFormatter
 notePath = os.getcwd()
 
 def analyzeRun(dfModel,nameList,verbose):
+    counter = 0
     maxima = dfModel.max();#find maxima from all columns in df
     maxPop = maxima[3];#find maxima in population column, peak popultion
     #print(maxPop)#peak population
@@ -32,9 +33,12 @@ def analyzeRun(dfModel,nameList,verbose):
     LhalfPop=0;
     UhalfPop=0;
     dP=50
-    while True:    
+    while True:
+        counter += 1
         newDF= dfModel.loc[(dfModel['pop'] > (halfPop-dP)) & (dfModel['pop'] < (halfPop+dP))]
         if(newDF.shape[0]>=2):
+            break
+        if counter > 50:
             break
         dP+=50
 #        print(str(dP)+": "+str(newDF.shape[0]))
