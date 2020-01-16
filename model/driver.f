@@ -883,16 +883,23 @@ c      end if!carrying capacity on the growth rate
 c constant growth rates
       rBirth = rBirth0
       rDeath = rDeath0
+
+c variable growth rates
+c      rBirth = rBirth0
+c      rDeath = rDeath0 + fragility*((ann_tempave- eqTem)/(ann_tempave))
+c     &         **pDeath
       rGrowth = (rBirth - rDeath)*(1-Npop/Nmax)
       Npoprev = Npop
-      Npop = max(Npop*(1+rGrowth), 1.00)
+      Npop = max(Npop*(1+En*rGrowth), 1.00)
+      En = En + rTech*((Npop-Npoprev)/Npop)
+
       else
         rBirth = rBirthTech0
         rGrowth = rBirthTech0 - rDeath0
       end if !end if coupled
 
 c then write data to ouput file (output.dat)
-      pco2=max( (pco2+(rco2*Npop)/10**6) , 0.00)
+      pco2=max( (pco2+(En*rco2*Npop)/10**6) , 0.00)
       write(10,'(7e20.10)') tcalc,ann_tempave,pco2,
      &                    Npop,rBirth,rDeath,rGrowth
       end if ! if equilibrium
@@ -992,11 +999,6 @@ c
 c
 c
 c  SOUTH POLAR SUPERCONTINENT 
- 20   coast = .TRUE.    !** still on land
-      coastlat = asin(1-2*ocean)*180/pi
-      do 25 k = 1,nbelts,1
-         if (latangle(k).le.coastlat) then
-            focean(k) = 0.
 c
 c **see whether you are on the coast
             if (latangle(k) .eq. coastlat) coast = .FALSE.
@@ -1147,3 +1149,8 @@ c------------------------------------------------------------------
  1711 continue
       pause 'too many steps in qtrap'
       END
+      program  energy_balance_climate_model
+c--------------------------------------------------------------------c
+c  This program calculates seasonal latitudinal temperature 
+c  gradients for Earth-like planets with N2,O2,CO2, and H20 
+c  atmospheres (e.g. Earth and Mars). Energy balance is treated as in 
