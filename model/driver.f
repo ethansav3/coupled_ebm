@@ -999,6 +999,11 @@ c
 c
 c
 c  SOUTH POLAR SUPERCONTINENT 
+ 20   coast = .TRUE.    !** still on land
+      coastlat = asin(1-2*ocean)*180/pi
+      do 25 k = 1,nbelts,1
+         if (latangle(k).le.coastlat) then
+            focean(k) = 0.
 c
 c **see whether you are on the coast
             if (latangle(k) .eq. coastlat) coast = .FALSE.
@@ -1149,8 +1154,3 @@ c------------------------------------------------------------------
  1711 continue
       pause 'too many steps in qtrap'
       END
-      program  energy_balance_climate_model
-c--------------------------------------------------------------------c
-c  This program calculates seasonal latitudinal temperature 
-c  gradients for Earth-like planets with N2,O2,CO2, and H20 
-c  atmospheres (e.g. Earth and Mars). Energy balance is treated as in 
