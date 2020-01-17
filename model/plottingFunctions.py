@@ -147,7 +147,7 @@ def compareModelOutput(modelData,dfTemp,dfPopCo2):
 #     ax22.grid(False)
 #    ax22.tick_params(axis='y', labelcolor="blue")
     ax2.plot(timeP[1:],rdN, c='blue',linestyle='--',alpha=.75, label="True dN")
-    ax2.set_ylim([np.amin(rdN),np.amax(rdN)+5])
+    ax2.set_ylim([np.amin(rdN)-5,np.amax(rdN)+5])
 #    ax22.set_ylabel("True dN", color='blue')
 #    ax2.set_ylabel("Model dN")
     ax2.legend(loc='best');

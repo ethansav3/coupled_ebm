@@ -141,6 +141,7 @@ c  INITIALIZE VARIABLES
       Npop   = N0
       Npoprev = Npop
       En = En0
+      rDeath = rDeath0
 c      rBirth = rBirthTech0
       rGrowth = rBirth0 - rDeath0
       tend = tend*runTime
@@ -882,7 +883,7 @@ c      end if!carrying capacity on the growth rate
       
 c constant growth rates
       rBirth = rBirth0
-      rDeath = rDeath0
+c      rDeath = rDeath0
 
 c variable growth rates
 c      rBirth = rBirth0
@@ -892,7 +893,7 @@ c     &         **pDeath
       Npoprev = Npop
       Npop = max(Npop*(1+En*rGrowth), 1.00)
       En = En + rTech*((Npop-Npoprev)/Npop)
-
+      rDeath = rDeath + fragility*(ann_tempave-eqTemp)**2
       else
         rBirth = rBirthTech0
         rGrowth = rBirthTech0 - rDeath0
