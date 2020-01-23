@@ -26,7 +26,6 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName):
     timer = timer/60/60/24/365.25; #convert seconds to years
     timer = timer+1820;
     pop = pop/1000
-    dN = np.diff(pop)
     pco2 = pco2*10**6
     
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
@@ -98,11 +97,6 @@ def compareModelOutput(modelData,dfTemp,dfPopCo2):
     population = np.asarray(dfPopCo2.population)
     timeP = np.asarray(dfPopCo2.time)
     
-    dfPopPred = pd.read_csv('worldPopPredictions.csv');#data from Frank, Adam, and Woodruff Sullivan.
-    dfPopPred.columns = ["time","pop"]
-    time2 = np.asarray(dfPopPred['time']).astype(int)
-    pop2 = np.asarray(dfPopPred['pop'])/1000
-    
     dfTemp.columns = ['year','anomaly','smoothed']; #rename column headers
 
     #convert from anomaly series to temperature series with BASELINE = 14.5 C
@@ -123,35 +117,20 @@ def compareModelOutput(modelData,dfTemp,dfPopCo2):
     modelTime = modelTime/60/60/24/365.25; #convert secons to years
     modelTime = modelTime + 1820;
     modelPco2 = modelPco2*10**6
-    
-    mdN = np.diff(modelPop)   #model dN
-    rdN = np.diff(population)/10 #real dN (/10 b/c calculated every 10 years)
-    
+
     sns.set(context='talk', style='darkgrid')
     size = 30
 
     fig, (ax1, ax2, ax3) = plt.subplots(3,sharex=True,figsize=(15,10));
-    ax1.plot(timeP,population, color='blue',alpha=.75,linestyle='--');
-    ax1.plot(time2,pop2, color='blue',alpha=.75, linestyle='--',label='True Population');
+    ax1.scatter(timeP,population,s=size, label='True Population');
     ax1.plot(modelTime,modelPop,c='black', label='Model Population');
     ax1.set_title("Population vs Time")
     ax1.legend(loc='best');
 
-#     ax2.scatter(timeP,co2,s=size, label='True pC02');
-#     ax2.plot(modelTime,modelPco2,c='black', label='Model pC02');
-#     ax2.set_title("pCO2 vs Time");
-#     ax2.legend(loc='best');
-    
-    ax2.plot(modelTime[1:],mdN, c="black", label="Model dN")
-#     ax22 = ax2.twinx()
-#     ax22.grid(False)
-#    ax22.tick_params(axis='y', labelcolor="blue")
-    ax2.plot(timeP[1:],rdN, c='blue',linestyle='--',alpha=.75, label="True dN")
-    ax2.set_ylim([np.amin(rdN)-5,np.amax(rdN)+5])
-#    ax22.set_ylabel("True dN", color='blue')
-#    ax2.set_ylabel("Model dN")
+    ax2.scatter(timeP,co2,s=size, label='True pC02');
+    ax2.plot(modelTime,modelPco2,c='black', label='Model pC02');
+    ax2.set_title("pCO2 vs Time");
     ax2.legend(loc='best');
-    ax2.set_title("dN vs Time");
 
     ax3.scatter(timeT,tempK_smooth,label='True Temp', alpha=.6,s=15);
     ax3.plot(modelTime,modelTemp,c='black', label='Model Temp');
