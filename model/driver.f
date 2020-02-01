@@ -51,10 +51,10 @@ c----------------------------------------------------------------------c
     
       real*4  lat,latangle,mu,ir,msun,landalb,icealb,irsum,irave,mp,
      &  iravesum,iceline,icelat,icesht
-      real*8  ecc,m,e,counter,runTime
-      real*8 rBirth0,rBirthMax,rDeath,opT,dTpop,Npop,N0,Nmax,
-     &       rGrowth, fragility, rBirth, pBirth, rTech, Npoprev !Population Parameters
-      real*8 rco2,En, En0, pco20, eqTemp, rDeath0, maxBirthRate, pDeath !Coupling Parameters
+      real*8  ecc,m,e,counter,runTime,dtemp, dpco2
+      real*8 rBirth0,rBirthMax,rDeath,opT,Npop,N0,Nmax,
+     &       rGrowth, fragility, rBirth, rTech, Npoprev !Population Parameters
+      real*8 rco2,En, En0, pco20, eqTemp, rDeath0 !Coupling Parameters
       logical :: coupled = .false.
       logical :: lverbose = .false.
       logical :: equilibrium = .false.
@@ -90,7 +90,6 @@ c  NAMELIST PARAMETERS
 c
 
 c  INITIALIZE VARIABLES
-      maxBirthRate = 0.00
       ann_tempave = 10.         !just some constant greater than zero
       seasons = .true.     !if .true. do seasons: otherwise do mean-annual
       last = .false.       !should always be .false.
@@ -127,11 +126,10 @@ c  INITIALIZE VARIABLES
       nfile = 0
       counter=0
       eqCounter=0
-      NAMELIST /ebm/ a, cloudir, coupled, d0, dt, dTpop, ecc,
+      NAMELIST /ebm/ a, cloudir, coupled, d0, dpco2, dt, dtemp, ecc,
      &               En0, fcloud, fragility, groundalb, igeog, 
      &               landsnowfrac, lverbose, N0, Nmax, obl, ocean, 
-     &               opT, pBirth, pco20, pDeath,
-     &               peri, rBirthMax, rBirth0,
+     &               opT, pco20, peri, rBirthMax, rBirth0,
      &               rco2, rDeath0, relsolcon, rot, rTech, runTime, 
      &               seasons, snowball, tend
       READ( namelistid, NML=ebm )
@@ -142,7 +140,7 @@ c  INITIALIZE VARIABLES
       Npoprev = Npop
       En = En0
       rDeath = rDeath0
-c      rBirth = rBirthTech0
+      rBirth = rBirth0
       rGrowth = rBirth0 - rDeath0
       tend = tend*runTime
 
@@ -787,28 +785,25 @@ c
 c-------------------Coupling-By-EHS------------------------------------------
       dRBTech = rBirth - rBirth0
       dRDeath = rDeath - rDeath0
-      if(lverbose) then
+      if(lverbose .AND. (Mod(counter,10.00) .EQ. 0.00) ) then
          write(*,*) ''
-         write(*,'(a,f5.0)') ' Counter: ', counter
+         write(*,'(a,f5.0,a,f5.0,a)') ' Counter: ', counter,
+     &                          '  (', (counter+1820 - eqCounter), ')'
          write(*,'(a,f5.1)') ' % completion: ', (counter/runTime)*(100)
-         write(*,'(a,e15.5)') ' Annual Avg Global Temp: ', ann_tempave
-         write(*,'(a,e15.5)') ' dT: ', abs(ann_tempave-prevtempave)
-         write(*,'(a,f9.6,a)') ' dP: ',(Npop-Npoprev)/1000, ' billion'
-         write(*,'(a,e15.5,a)') ' Population:' ,Npop/1000, ' billion'
-         write(*,*) 'Growth Rate: ', rGrowth
+         write(*,'(a,f9.2)') ' Annual Avg Global Temp: ', ann_tempave
+         write(*,'(a,f9.2)') ' Equilibrium Temperature: ', opT
+         write(*,'(a,f9.2,a)') ' Population:' ,Npop/1000, ' billion'
          write(*,'(a,f9.0)') ' pCO2 (ppm)= ',(pco2*10**6)
-         write(*,'(a,f9.0)') ' initial pCO2 (ppm) = ',(pco20*10**6)
-         write(*,'(a,f9.3,a)') ' Distance: ',(relsolcon)**(-1/2), " AU"
-         write(*,'(a,f9.6)') ' rBirthMax: ',rBirthMax
-         write(*,'(a,f9.6)') ' rBirth: ',rBirth
-         write(*,'(a,f12.10)') ' En: ',En
-         write(*,'(a,f9.6)') ' rDeath: ',rDeath
-         write(*,'(a,f15.6)') ' rBirth-rDeath: ',rBirth-rDeath
-         write(*,'(a,f15.6)') ' rBirthTech: ',rBirthTech
-         write(*,'(a,f15.6)') ' rDeath - rDeath0: ',dRDeath
-         write(*,'(a,f15.6)') ' rBirthTech - rBirthTech0: ',dRBTech
-
-          
+         write(*,'(a,f9.6,a)') ' dP: ',(Npop-Npoprev)/1000, ' billion'
+         write(*,'(a,f15.8)') ' rBirth: ', rBirth
+         write(*,'(a,f15.8)') ' rDeath: ', rDeath
+         write(*,'(a,f15.6)') ' rBirth*Npop: ', rBirth*Npop
+         write(*,'(a,f15.6)') ' rDeath0*Nmax: ', rDeath0*Nmax
+         write(*,'(a,f15.6)') ' rDeath*Npop: ', rDeath*Npop
+         write(*,'(a,f15.6)') ' (Tavg - Teq): ', ann_tempave - opT
+         write(*,'(a,f15.6)') ' (pCO2 - pCO20): ', pco2 - pco20
+      
+         
          if(equilibrium) then
                  write(*,'(a,f8.3,a,f5.0)') " Equilibrium was 
      &   reached at T: ",opT,",  t: ",eqCounter 
@@ -817,7 +812,6 @@ c-------------------Coupling-By-EHS------------------------------------------
          end if
          write(*,*) ''
       end if
-
       if(ann_tempave .ge. 450) then 
         write(*,*) "Temperatures Exceed Max=450, Abort Program"
         if(.not.equilibrium) then
@@ -856,51 +850,19 @@ c
       end if
       if(equilibrium) then
       if(coupled) then
-c         rGrowth = En*(rBirth)*exp(-( (ann_tempave-opT)/(dTpop) )**2) 
-c     &           - En*(rDeath)*exp(( (ann_tempave-opT)/(dTpop))**2 )
-c          rGrowth=(rBirthNaked + rBirthTech) - rDeath
-c        rBirthTech = rBirthTech + En*pco2/pco20
-c         rDeath = rDeath + exp( (  ((ann_tempave-opt)**2)/fragility))-1
-    
-c         rBirthTech = rBirthTech0 + En*((pco2-pco20)*10**6)
-c     &                             *(1-(rBirthTech/rBirthMax))**pBirth 
-c         rDeath = rDeath0 + fragility*(ann_tempave-opT)**pDeath
 
-         
-                   !variable growth rates
-c      rBirth= rBirthTech0+En*((pco2-pco20)*10**6)**pBirth
-c      rBirth = rBirth0 + rBirthTech0*Npop*Exp(-En*(pco2-pco20)*10**6)
-c      rDeath = rDeath0 + fragility*(ann_tempave-opT)**pDeath
-      
-c      if(rBirth <= rBirthMax) then     
-c        rGrowth = rBirth - rDeath
-c        Npop=max(rGrowth*Npop + Npop ,0.01)
-c      else
-c         maxReached = .true.
-c         rGrowth = rBirthMax - rDeath
-c         Npop=max(rGrowth + Npop ,0.01)
-c      end if!carrying capacity on the growth rate
-      
-c constant growth rates
-      rBirth = rBirth0
-c      rDeath = rDeath0
-
-c variable growth rates
-c      rBirth = rBirth0
-c      rDeath = rDeath0 + fragility*((ann_tempave- eqTem)/(ann_tempave))
-c     &         **pDeath
-      rGrowth = (rBirth - rDeath)*(1-Npop/Nmax)
+c     Population Control Here
+      rBirth = rBirth0*(1+ (pco2-pco20)/(dpco2) )
+      rDeath = rDeath0*(1+((ann_tempave-opT)/(dtemp))**2)
       Npoprev = Npop
-      Npop = max(Npop*(1+En*rGrowth), 1.00)
-      En = En + rTech*((Npop-Npoprev)/Npop)
-      rDeath = rDeath + fragility*(ann_tempave-eqTemp)**2
+      Npop = max(Npop+min(rBirth*Npop, rDeath0*Nmax) - rDeath*Npop,1.00)
       else
-        rBirth = rBirthTech0
-        rGrowth = rBirthTech0 - rDeath0
+        rBirth = rBirth0
+        rGrowth = rBirth0 - rDeath0
       end if !end if coupled
 
 c then write data to ouput file (output.dat)
-      pco2=max( (pco2+(En*rco2*Npop)/10**6) , 0.00)
+      pco2=max( (pco2+(rco2*Npop)/10**6) , 0.00)
       write(10,'(7e20.10)') tcalc,ann_tempave,pco2,
      &                    Npop,rBirth,rDeath,rGrowth
       end if ! if equilibrium

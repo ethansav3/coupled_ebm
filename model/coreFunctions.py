@@ -1,5 +1,6 @@
 import tempfile
 import os
+import math
 from subprocess import call
 import matplotlib.pyplot as plt
 from f90nml import *
@@ -12,17 +13,74 @@ from statistics import *
 import shutil
 import sys
 from matplotlib.ticker import FormatStrFormatter
+from plottingFunctions import *
 
 notePath = os.getcwd()
-
+fullArr=[]
+fullArrTr = []
+fullMaxPop=0
+def runModel(nameList, coupled, runTime, plot, save, analyze, driverName):
+    saveName=0
+    count = 0
+    numCols=4
+    numRows=4
+#    for j in np.linspace(10,100,numCols):
+    for j in [13]:#pop loops
+        newMaxPop=int(j)*1000#change max pop
+        newA = .9#change distance (AU)
+        dA=.01
+#        minA, maxA, fullMaxPop, fullMaxPopA = habitableZone(nameList,newMaxPop,newA,runTime,dA)
+#        print("The Habitable Zone for maxPop="+str(round(newMaxPop/1000)) + " billion is:")
+#        print("Minimum: "+str(minA) + " AU")
+#        print("Maximum: "+str(maxA)+" AU")
+#        print("Max Pop Reached: " + str(fullMaxPop)+ " billion" + ", at Distance: " + str(round(fullMaxPopA,3))+"\n")        
+#        for i in np.linspace(minA,maxA,numRows):#distance loops
+#            count += 1
+#            print(str( (count/(numCols*numRows))*100 ) + "% Until Completion" )
+        for i in [1]:#distance loops
+            #calculate inputs
+            newA = round(i,3) #change distance (AU)
+            nameList['ebm']['coupled']=coupled
+            nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
+            nameList['ebm']['runTime'] = runTime#change runtime
+            nameList['ebm']['Nmax'] = newMaxPop #change carrying capacity
+            #run program
+            dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram(driverName,nameList,True)#False=no output
+            #plot the results
+            if coupled and equilibrium:
+                inputRunTime = runTime #how long I originally specified
+                outputRunTime = math.ceil( dfModel['time_yrs'].iloc[-1] )#how long it actually ran
+                if ((inputRunTime - outputRunTime) <= 3) and analyze:
+                    popStats = analyzeRun(dfModel,nameList, False)#if True, then Print Dictionary Values
+                    fullMaxPop=popStats["maxPop"]
+                    popStats['maxPopPlot']=fullMaxPop+(3/100)*fullMaxPop#maximum population range
+#                else:
+#                    print("Program Stopped at: " + str((outputRunTime/inputRunTime)*100) + " %" + "\n")
+                inputs=[newA,newMaxPop,runTime]
+                if equilibrium and plot: plotModelOutput(dfModel,inputs,eqTime,eqTemp,popStats,save,saveName)#plot the output of our model, colored by pco2 
+                if save: saveName+=1
+                #partitition dataframe into numpy arrays
+                popArr=np.asarray(dfModel["pop"])
+                pop=np.ndarray.tolist(popArr/1000)
+                pco2=dfModel["pco2_ppm"].tolist()
+                time=dfModel["time_yrs"].tolist()
+                temp=dfModel["temp"].tolist()
+                runArr= [pop,temp,pco2,time]#make list of lists
+                fullArrTr = zip(pop,temp,pco2,time)#make list of lists
+                fullArr.append(runArr)#add the data from the run into the 2dList
+    return dfModel
+        #end = time.time()
+    #print( "Elapsed Time: " + str(end-start))
+    
 def analyzeRun(dfModel,nameList,verbose):
     counter = 0
     maxima = dfModel.max();#find maxima from all columns in df
     maxPop = maxima[3];#find maxima in population column, peak popultion
-    #print(maxPop)#peak population
+    finalPop = dfModel['pop'][dfModel.index[-1]]
+ #   print(maxPop)#peak population
+ #   print(finalPop)
     maxPopIndex = dfModel.loc[dfModel['pop']==maxPop].index#search rows for index of max pop
     maxPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
-
     halfPop=maxPop/2;
     halfPopIndex = dfModel.loc[dfModel['pop']==halfPop].index#search rows for index of max pop
     halfPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
@@ -39,8 +97,8 @@ def analyzeRun(dfModel,nameList,verbose):
         if(newDF.shape[0]>=2):
             break
         dP+=50
-#        print(str(dP)+": "+str(newDF.shape[0]))
-#        print(newDF)
+       # print(str(dP)+": "+str(newDF.shape[0]))
+       # print(newDF)
     try:
         if(nameList['ebm']['coupled']):
             LhalfPop = newDF.time_yrs.iloc[0]  #new dataframe, time column, first index
@@ -53,13 +111,13 @@ def analyzeRun(dfModel,nameList,verbose):
     #dictionary of population statistics
     popStats={'maxPop' : (maxPop/1000), 'maxTime': maxPopTime.mean(),
               'halfPop': (halfPop/1000),'LhalfTime': LhalfPop, 'UhalfTime': UhalfPop,
-              'maxPopPlot': maxPop/1000}#maximum plotting range for population
+              'maxPopPlot': maxPop/1000, 'finalPop': (finalPop/1000)}#maximum plotting range for population
     if(verbose):
         for k,v in popStats.items():
             print(k + " = " +str(v))
     return popStats
 
-def habitableZone(nameList,newPco2,newA,runTime,dA):
+def habitableZone(nameList,newMaxPop,newA,runTime,dA):
     fullMaxPop=0;
     fullMaxPopA=0;
     coupled=True
@@ -70,7 +128,7 @@ def habitableZone(nameList,newPco2,newA,runTime,dA):
     while(True):
         relsolcon=newA**-2
         nameList['ebm']['coupled']=coupled
-        nameList['ebm']['pco20']=newPco2/10**6#convert pco2 to bars
+        nameList['ebm']['Nmax']=newMaxPop#convert pco2 to bars
         nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
         nameList['ebm']['runTime'] = runTime#change runtime
         dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram("driver.exe",nameList,False)#False=no output
@@ -148,17 +206,16 @@ def makeDefNamelist():
             'rBirth0' : 0.02,
             'rBirthMax' : 0.83,
             'rDeath0' : 0.015,
-            'pBirth' : 1.00,
-            'pDeath' : 1.00,
             'rTech' : 1.00,
-            'dTpop' : 10,
             'opT' : 290.5,
             'rco2' : 1.9e-4,#3.459e-4,
             'En0' : 1.00,
             'fragility' : 1.00,
             'coupled' : True,
             'lverbose' : True,
-            'runTime' : 100
+            'runTime' : 100,
+            'dtemp' : 1.73,
+            'dpco2' : 6.3e-5
         }
     }
     return nml
