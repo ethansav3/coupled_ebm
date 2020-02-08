@@ -19,16 +19,22 @@ notePath = os.getcwd()
 fullArr=[]
 fullArrTr = []
 fullMaxPop=0
-def runModel(nameList, coupled, runTime, plot, save, analyze, driverName):
-    saveName=0
-    count = 0
-    numCols=4
-    numRows=4
+def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopList,distList):
+    saveName= 0
+    count   = 0
+    numCols = 4
+    numRows = 4
+    tempData = []
+    pco2Data = []
+#    allData = {}
+#    allData['pco2'] = []
+#    allData['temp'] = []
 #    for j in np.linspace(10,100,numCols):
-    for j in [13]:#pop loops
-        newMaxPop=int(j)*1000#change max pop
+    for j in maxPopList:#pop loops
+        newMaxPop=int(j)#change max pop
         newA = .9#change distance (AU)
         dA=.01
+        popStats = {}
 #        minA, maxA, fullMaxPop, fullMaxPopA = habitableZone(nameList,newMaxPop,newA,runTime,dA)
 #        print("The Habitable Zone for maxPop="+str(round(newMaxPop/1000)) + " billion is:")
 #        print("Minimum: "+str(minA) + " AU")
@@ -37,15 +43,26 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName):
 #        for i in np.linspace(minA,maxA,numRows):#distance loops
 #            count += 1
 #            print(str( (count/(numCols*numRows))*100 ) + "% Until Completion" )
-        for i in [1]:#distance loops
+        dictdTdP= {
+        0.94 : 7.697*10**-2,
+        0.97 : 4.94*10**-3,
+        1.00 : 3.378*10**-3,
+        1.03 : 1.959*10**-2,
+        1.06 : 6.554*10**-4
+        }
+        for i in distList:#distance 
+            dimVar = (nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])/(nameList['ebm']['Nmax']*nameList['ebm']['rco2']*dictdTdP[i])
             #calculate inputs
             newA = round(i,3) #change distance (AU)
             nameList['ebm']['coupled']=coupled
             nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
             nameList['ebm']['runTime'] = runTime#change runtime
             nameList['ebm']['Nmax'] = newMaxPop #change carrying capacity
+            dtemp = nameList['ebm']['dtemp'] 
             #run program
             dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram(driverName,nameList,True)#False=no output
+            pco2Data += dfModel['pco2'].tolist()
+            tempData += dfModel['temp'].tolist()
             #plot the results
             if coupled and equilibrium:
                 inputRunTime = runTime #how long I originally specified
@@ -54,10 +71,9 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName):
                     popStats = analyzeRun(dfModel,nameList, False)#if True, then Print Dictionary Values
                     fullMaxPop=popStats["maxPop"]
                     popStats['maxPopPlot']=fullMaxPop+(3/100)*fullMaxPop#maximum population range
-#                else:
-#                    print("Program Stopped at: " + str((outputRunTime/inputRunTime)*100) + " %" + "\n")
-                inputs=[newA,newMaxPop,runTime]
-                if equilibrium and plot: plotModelOutput(dfModel,inputs,eqTime,eqTemp,popStats,save,saveName)#plot the output of our model, colored by pco2 
+                inputs=[newA,newMaxPop,runTime,dtemp]
+                if equilibrium and plot:
+                    plotModelOutput(dfModel,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar)#plot the output of our model, colored by pco2 
                 if save: saveName+=1
                 #partitition dataframe into numpy arrays
                 popArr=np.asarray(dfModel["pop"])
@@ -68,7 +84,8 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName):
                 runArr= [pop,temp,pco2,time]#make list of lists
                 fullArrTr = zip(pop,temp,pco2,time)#make list of lists
                 fullArr.append(runArr)#add the data from the run into the 2dList
-    return dfModel
+    dfData = pd.DataFrame({'temp':tempData, 'pco2':pco2Data})
+    return dfModel, dfData
         #end = time.time()
     #print( "Elapsed Time: " + str(end-start))
     

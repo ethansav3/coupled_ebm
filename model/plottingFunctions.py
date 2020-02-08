@@ -10,7 +10,7 @@ import locale
 from matplotlib.ticker import FormatStrFormatter
 from coreFunctions import *
 
-def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName):
+def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
     sns.set_style('darkgrid')
     sns.set_context('poster',rc={'font.size': 30.0,
      'axes.labelsize': 26.0,
@@ -35,23 +35,28 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName):
      'axes.titlesize': 24.0,
      'xtick.labelsize': 26.0,
      'ytick.labelsize': 26.0,
-     'legend.fontsize': 22.0})
+     'legend.fontsize': 17.0})
     fig, ax = plt.subplots(figsize=(12.25,7),dpi=200) #set up figure
-    fig.suptitle("     Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl",x=.41)
+    fig.suptitle("   Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl"+",    $\Lambda:$ " +str(round(dimVar,3)),x=.41,fontsize=26)
      
     line = ax.scatter(pop,temp,c=pco2,cmap='jet')
     fig.colorbar(line,label='pCO2 (ppm)')
     ax.set_xlabel('Population (billion)')
+    #horozontal lines
+    ax.axhline(y=eqTemp,c='black',label='$T_{eq}=$'+str(round(eqTemp))+" K",linestyle=(0, (3,1,1,1)))
+    ax.axhline(y=eqTemp+inputs[3],c=(0.7,0,0),label='$T_{eq}+\Delta T=$'+str(round(eqTemp+inputs[3]))+" K",linestyle=(0, (3,1,1,1)))
+#    ax.axvline(x=popStats['halfPop'],c='black',linestyle='--',label='$N_{1/2}=$'+str(round(popStats['halfPop'],1))+" billion")       
+    #vertical lines
     ax.axvline(x=popStats['maxPop'],c='black',label='$N_{max}=$'+str(round(popStats['maxPop'],1))+" billion")
     ax.axvline(x=popStats['halfPop'],c='black',linestyle='--',label='$N_{1/2}=$'+str(round(popStats['halfPop'],1))+" billion")       
     ax.axvline(x=popStats['finalPop'],c='black',linestyle=':',label='$N_{final}=$'+str(round(popStats['finalPop'],1))+" billion")       
     ax.set_ylabel('Temperature (Kelvin)')
-    ax.legend(loc='upper right')
+    ax.legend(loc='best')
     if(save): plt.savefig("../plotsPhase/"+str(saveName)+".png")
     plt.show() 
 #------------------------------------------------------------Normal Plots----------------------------------------------------------------------------------------
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
-    fig.suptitle("Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $T_{eq}$: "+str(eqTemp)+"K",x=.41)
+    fig.suptitle("       Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $T_{eq}$: "+str(eqTemp)+"K"+",   $\Lambda:$ " +str(round(dimVar,3)),x=.41,fontsize=36)
      #plot time vs temp (K)
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
