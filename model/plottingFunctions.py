@@ -37,26 +37,26 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
      'ytick.labelsize': 26.0,
      'legend.fontsize': 17.0})
     fig, ax = plt.subplots(figsize=(12.25,7),dpi=200) #set up figure
-    fig.suptitle("   Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl"+",    $\Lambda:$ " +str(round(dimVar,3)),x=.41,fontsize=26)
+    fig.suptitle("      Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl"+",    $\Lambda:$ " +str(round(dimVar,3)),x=.41,fontsize=23)
      
     line = ax.scatter(pop,temp,c=pco2,cmap='jet')
     fig.colorbar(line,label='pCO2 (ppm)')
     ax.set_xlabel('Population (billion)')
     #horozontal lines
-    ax.axhline(y=eqTemp,c='black',label='$T_{eq}=$'+str(round(eqTemp))+" K",linestyle=(0, (3,1,1,1)))
-    ax.axhline(y=eqTemp+inputs[3],c=(0.7,0,0),label='$T_{eq}+\Delta T=$'+str(round(eqTemp+inputs[3]))+" K",linestyle=(0, (3,1,1,1)))
-#    ax.axvline(x=popStats['halfPop'],c='black',linestyle='--',label='$N_{1/2}=$'+str(round(popStats['halfPop'],1))+" billion")       
+    ax.axhline(y=eqTemp,c='b',label='$T_{eq}=$'+str(round(eqTemp))+" K")
+    ax.axhline(y=eqTemp+inputs[3],c='springgreen',label='$T_{eq}+\Delta T=$'+str(round(eqTemp+inputs[3]))+" K")
+    ax.axhline(y=eqTemp+2*inputs[3],c='orangered',label='$T_{eq}+2\Delta T=$'+str(round(eqTemp+2*inputs[3]))+" K")
     #vertical lines
-    ax.axvline(x=popStats['maxPop'],c='black',label='$N_{max}=$'+str(round(popStats['maxPop'],1))+" billion")
-    ax.axvline(x=popStats['halfPop'],c='black',linestyle='--',label='$N_{1/2}=$'+str(round(popStats['halfPop'],1))+" billion")       
-    ax.axvline(x=popStats['finalPop'],c='black',linestyle=':',label='$N_{final}=$'+str(round(popStats['finalPop'],1))+" billion")       
-    ax.set_ylabel('Temperature (Kelvin)')
+    ax.axvline(x=popStats['maxPop'],ms=8,c='b',linestyle='--',label='$N_{peak}=$'+str(round(popStats['maxPop'],1))+" billion")
+    ax.axvline(x=popStats['halfPop'],ms=8,c='springgreen',linestyle='--',label='$N_{1/2}=$'+str(round(popStats['halfPop'],1))+" billion")       
+    ax.axvline(x=popStats['finalPop'],ms=8,c='orangered',linestyle='--',label='$N_{final}=$'+str(round(popStats['finalPop'],1))+" billion")       
+    ax.set_ylabel('Temperature (K)')
     ax.legend(loc='best')
     if(save): plt.savefig("../plotsPhase/"+str(saveName)+".png")
     plt.show() 
-#------------------------------------------------------------Normal Plots----------------------------------------------------------------------------------------
+#----------Normal Plots----------------------------------------------------------------------------------------
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
-    fig.suptitle("       Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $T_{eq}$: "+str(eqTemp)+"K"+",   $\Lambda:$ " +str(round(dimVar,3)),x=.41,fontsize=36)
+    fig.suptitle("       Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $\Lambda:$ " +str(round(dimVar,3)),x=.40,fontsize=41)
      #plot time vs temp (K)
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
@@ -79,22 +79,25 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
     ax2.set_yticks(np.linspace(min(pop),popStats['maxPopPlot'],4))
     sns.set_palette('colorblind') 
     #horizontal lines
-    ax2.axhline(y=popStats['maxPop'],c='black',label='$N_{max}=$'+str(round(popStats['maxPop'],1))+" billion")
-    ax2.axhline(y=popStats['halfPop'],c='black',linestyle='--',label='$N_{1/2}=$'+str(round(popStats['halfPop'],1))+" billion")       
-    ax2.axhline(y=popStats['finalPop'],c='black',linestyle=':',label='$N_{final}=$'+str(round(popStats['finalPop'],1))+" billion")       
-    #vertical lines
+    ax2.axhline(y=popStats['maxPop'],c='b',label='$N_{peak}=$'+str(round(popStats['maxPop'],1))+" billion")
+    ax2.axhline(y=popStats['halfPop'],c='springgreen',label='$N_{1/2}=$'+str(round(popStats['halfPop'],1))+" billion")       
+    ax2.axhline(y=popStats['finalPop'],c='orangered',label='$N_{final}=$'+str(round(popStats['finalPop'],1))+" billion")  
+    ax1.axhline(y=eqTemp,c='b',label='$T_{eq}=$'+str(round(eqTemp))+" K")
+    ax1.axhline(y=eqTemp+inputs[3],c="springgreen",label='$T_{eq}+\Delta T=$'+str(round(eqTemp+inputs[3]))+" K")
+    ax1.axhline(y=eqTemp+2*inputs[3],c='orangered',label='$T_{eq}+2\Delta T=$'+str(round(eqTemp+2*inputs[3]))+" K")
+       #vertical lines
 #   ax2.axvline(x=(popStats['LhalfTime']+1820),linestyle='--',c=(0,0,.7))
 #    ax1.axvline(x=(popStats['LhalfTime']+1820),linestyle='--',c=(0,0,.7),label="$t_{1/2}^{-}=$"+str(int((popStats['LhalfTime']+1820))))
-    ax2.axvline(x=(popStats['maxTime']+1820),c=(0,.7,0),linestyle='--') 
-    ax1.axvline(x=(popStats['maxTime']+1820),c=(0,.7,0),linestyle='--',label="$t_{max}=$"+str(int((popStats['maxTime']+1820))))
-    ax2.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c=(.7,0,0))
-    ax1.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c=(.7,0,0),label="$t_{1/2}^{+}=$"+str(int((popStats['UhalfTime']+1820)))) 
+    ax2.axvline(x=(popStats['maxTime']+1820),c='b',linestyle='--') 
+    ax1.axvline(x=(popStats['maxTime']+1820),c='b',linestyle='--',label="$t_{peak}=$"+str(int((popStats['maxTime']+1820))))
+    ax2.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c="orangered")
+    ax1.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c="orangered",label="$t_{1/2}=$"+str(int((popStats['UhalfTime']+1820)))) 
     
     ax2.set_xlim(min(timer),min(timer)+inputs[2])
     ax2.set_ylim(min(pop),popStats['maxPopPlot'])
     fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
     ax2.legend(loc='best', prop={'size': 30})
-    ax1.legend(loc='lower right', prop={'size': 30})
+    ax1.legend(loc='lower right', prop={'size': 24})
     if(save): plt.savefig("../plots/"+str(saveName)+".png")
     plt.show()
     
@@ -108,7 +111,8 @@ def growthRates(dfModel,compare):
 #    print(mgRate)
     print("Model Min Growth Rate: "+ str(round(min(mgRate),4)))
     print("Model Max Growth Rate: "+ str(round(max(mgRate),4))+"\n")
-    mtime = np.asarray(dfModel["time_yrs"])+1820
+    mtime = np.asarray(dfModel["time_yrs"])+1820 
+
     plt.plot(mtime,mgBRate,label="Model Birth Growth")
     plt.plot(mtime,mgDRate,label="Model Death Growth")
     plt.plot(mtime,mgRate,label="Model Relative Growth")
