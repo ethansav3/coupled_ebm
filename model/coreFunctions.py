@@ -44,14 +44,21 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
 #            count += 1
 #            print(str( (count/(numCols*numRows))*100 ) + "% Until Completion" )
         dictdTdP= {
-        0.94 : 7.697*10**-2,
+        0.94 : 7.967*10**-2,
         0.97 : 4.94*10**-3,
         1.00 : 3.378*10**-3,
         1.03 : 1.959*10**-2,
         1.06 : 6.554*10**-4
         }
         for i in distList:#distance 
-            dimVar = (nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])/(nameList['ebm']['Nmax']*nameList['ebm']['rco2']*dictdTdP[i])
+            dimVar = (nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])/(newMaxPop*nameList['ebm']['rco2']*dictdTdP[i])
+            print("rBirth0: " + str(nameList['ebm']['rBirth0']))
+            print("dT: " + str(nameList['ebm']['dtemp']))
+            print("rco2: " + str(nameList['ebm']['rco2']))
+            print("maxPop: " + str(newMaxPop))
+            print("dTdP: " +str(dictdTdP[i]))
+            print("Dimensionless Variable: " + str(dimVar))
+
             #calculate inputs
             newA = round(i,3) #change distance (AU)
             nameList['ebm']['coupled']=coupled

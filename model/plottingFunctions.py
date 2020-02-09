@@ -61,13 +61,13 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
     ax1.set(ylabel='Temperature (K)',xlabel='Time (years)')
-    ax1.set_yticks(np.linspace(min(temp),max(temp),4))
     color='black'
     linestyle='--'
     alpha=.5
     
     ax1.set_xlim(min(timer),min(timer)+inputs[2])
-
+    ax1.set_ylim(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),max(eqTemp+2*inputs[3],max(temp))+(5/100)*(max(temp)-min(temp)))
+    ax1.set_yticks(np.linspace(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),max(eqTemp+2*inputs[3],max(temp))+(5/100)*(max(temp)-min(temp)),4))
     
     sns.set_style('darkgrid')
 
