@@ -95,7 +95,7 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
                 fullArrTr = zip(pop,temp,pco2,time)#make list of lists
                 fullArr.append(runArr)#add the data from the run into the 2dList
     dfData = pd.DataFrame({'temp':tempData, 'pco2':pco2Data})
-    return dfModel, dfData, equilibrium, eqTemp
+    return dfModel, dfData, equilibrium, eqTemp, eqTime
         #end = time.time()
     #print( "Elapsed Time: " + str(end-start))
     

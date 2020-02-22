@@ -169,7 +169,7 @@ def plotTruePopCo2(dfPopCo2):
     plt.legend(loc='best')
     plt.colorbar(line);
     
-def compareModelOutput(modelData,dfTemp,dfPopCo2):
+def compareModelOutput(modelData,dfTemp,dfPopCo2,eqTime):
     #true population and co2 data
     if dfPopCo2.population.mean()>15000: 
         dfPopCo2.population = dfPopCo2.population/1000
@@ -210,12 +210,17 @@ def compareModelOutput(modelData,dfTemp,dfPopCo2):
     size = 30
 
     fig, (ax1, ax2, ax3) = plt.subplots(3,sharex=True,figsize=(15,10));
-    ax1.plot(timeP,population, color='blue',alpha=.75,linestyle='--');
-    ax1.plot(time2,pop2, color='blue',alpha=.75, linestyle='--',label='True Population');
+    ax1.scatter(timeP,population, alpha=.7, s=20 ,label="True Population");
+   # ax1.plot(time2,pop2, color='blue',alpha=.75, linestyle='--',label='True Population');
     ax1.plot(modelTime,modelPop,c='black', label='Model Population');
     ax1.set_title("Population vs Time")
     ax1.legend(loc='best');
-
+    
+    timeMin = min(min(timeP),min(modelTime))+eqTime
+    timeMax = max(timeP)
+    ax1.set_xlim(timeMin, timeMax)
+    ax2.set_xlim(timeMin, timeMax)
+    ax3.set_xlim(timeMin, timeMax)
 #     ax2.scatter(timeP,co2,s=size, label='True pC02');
 #     ax2.plot(modelTime,modelPco2,c='black', label='Model pC02');
 #     ax2.set_title("pCO2 vs Time");
@@ -225,7 +230,7 @@ def compareModelOutput(modelData,dfTemp,dfPopCo2):
 #     ax22 = ax2.twinx()
 #     ax22.grid(False)
 #    ax22.tick_params(axis='y', labelcolor="blue")
-    ax2.plot(timeP[1:],rdN, c='blue',linestyle='--',alpha=.75, label="True dN")
+    ax2.scatter(timeP[1:],rdN,  alpha=.7, s=20 , label="True dN")
     ax2.set_ylim([np.amin(mdN)-5,np.amax(mdN)+5])
 #    ax22.set_ylabel("True dN", color='blue')
 #    ax2.set_ylabel("Model dN")

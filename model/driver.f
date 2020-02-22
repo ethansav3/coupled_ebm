@@ -694,8 +694,8 @@ c      write(*,*) 'Final Avg Albedo: ', ann_albave
       write(*,'(a,f9.3,a)') ' Carrying Capacity: ',Nmax/1000, ' billn'
       write(*,'(a,f9.0)') ' Final pCO2: ', pco2*10**6
 c      write(*,'(a,f15.3)') ' Overall dPCO2: ', (pco2-pco20)*10**6
-      write(*,'(a,f20.10)') ' Initial Birth Rate: ',rBirthTech0
-      write(*,'(a,f20.10)') ' Final Birth Rate: ',rBirth
+      write(*,'(a,f20.5)') ' Initial Birth Rate: ',rBirthTech0
+      write(*,'(a,f20.5)') ' Final Birth Rate: ',rBirth
       write(*,'(a,f9.3)') ' Initial Death Rate: ',rDeath0
       write(*,'(a,f9.3)') ' Final Death Rate: ',rDeath
       write(*,'(a,f9.3,a)') ' Distance: ',sqrt(relsolcon)**(-1), " AU"
