@@ -37,8 +37,9 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
      'ytick.labelsize': 26.0,
      'legend.fontsize': 17.0})
     fig, ax = plt.subplots(figsize=(12.25,7),dpi=200) #set up figure
-    fig.suptitle("      Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl"+",    $\Lambda:$ " +str(round(dimVar,3)),x=.41,fontsize=23)
-     
+    fig.suptitle("      Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl"+",    $\Gamma:$ " +str(round(dimVar,3)),x=.41,fontsize=23)
+    ax.set_ylim(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),eqTemp+inputs[3]+(5/100)*(max(temp)-min(temp)))
+    
     line = ax.scatter(pop,temp,c=pco2,cmap='jet')
     fig.colorbar(line,label='pCO2 (ppm)')
     ax.set_xlabel('Population (billion)')
@@ -56,7 +57,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
     plt.show() 
 #----------Normal Plots----------------------------------------------------------------------------------------
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
-    fig.suptitle("       Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $\Lambda:$ " +str(round(dimVar,3)),x=.40,fontsize=41)
+    fig.suptitle("       Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $\Gamma:$ " +str(round(dimVar,3)),x=.40,fontsize=41)
      #plot time vs temp (K)
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
@@ -66,8 +67,8 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
     alpha=.5
     
     ax1.set_xlim(min(timer),min(timer)+inputs[2])
-    ax1.set_ylim(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),max(eqTemp+2*inputs[3],max(temp))+(5/100)*(max(temp)-min(temp)))
-    ax1.set_yticks(np.linspace(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),max(eqTemp+2*inputs[3],max(temp))+(5/100)*(max(temp)-min(temp)),4))
+    ax1.set_ylim(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),eqTemp+inputs[3]+(5/100)*(max(temp)-min(temp)))
+    ax1.set_yticks(np.linspace(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),max(temp)+(5/100)*(max(temp)-min(temp)),4))
     
     sns.set_style('darkgrid')
 

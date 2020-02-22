@@ -19,7 +19,7 @@ notePath = os.getcwd()
 fullArr=[]
 fullArrTr = []
 fullMaxPop=0
-def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopList,distList):
+def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopList,distList,showInputs):
     saveName= 0
     count   = 0
     numCols = 4
@@ -30,9 +30,9 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
 #    allData['pco2'] = []
 #    allData['temp'] = []
 #    for j in np.linspace(10,100,numCols):
-    for j in maxPopList:#pop loops
+    for j in [nameList['ebm']['Nmax']]:#pop loops
         newMaxPop=int(j)#change max pop
-        newA = .9#change distance (AU)
+#        newA = .9#change distance (AU)
         dA=.01
         popStats = {}
 #        minA, maxA, fullMaxPop, fullMaxPopA = habitableZone(nameList,newMaxPop,newA,runTime,dA)
@@ -50,14 +50,17 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
         1.03 : 1.959*10**-2,
         1.06 : 6.554*10**-4
         }
-        for i in distList:#distance 
-            dimVar = (nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])/(newMaxPop*nameList['ebm']['rco2']*dictdTdP[i])
-            print("rBirth0: " + str(nameList['ebm']['rBirth0']))
-            print("dT: " + str(nameList['ebm']['dtemp']))
-            print("rco2: " + str(nameList['ebm']['rco2']))
-            print("maxPop: " + str(newMaxPop))
-            print("dTdP: " +str(dictdTdP[i]))
-            print("Dimensionless Variable: " + str(dimVar))
+        for i in [nameList['ebm']['relsolcon']**-(1/2)]:#distance 
+#            dimVar = (nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])/(newMaxPop*nameList['ebm']['rco2']*dictdTdP[i])
+            #dimVar=(newMaxPop*nameList['ebm']['rco2']*dictdTdP[i])/(nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])
+            dimVar=0
+            if(nameList['ebm']['lverbose']==True):
+                print("rBirth0: " + str(nameList['ebm']['rBirth0']))
+                print("dT: " + str(nameList['ebm']['dtemp']))
+                print("rco2: " + str(nameList['ebm']['rco2']))
+                print("maxPop: " + str(newMaxPop))
+                #print("dTdP: " +str(dictdTdP[i]))
+                print("Dimensionless Variable: " + str(dimVar))
 
             #calculate inputs
             newA = round(i,3) #change distance (AU)
@@ -67,7 +70,7 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
             nameList['ebm']['Nmax'] = newMaxPop #change carrying capacity
             dtemp = nameList['ebm']['dtemp'] 
             #run program
-            dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram(driverName,nameList,True)#False=no output
+            dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram(driverName,nameList,True,showInputs)#False=no output
             pco2Data += dfModel['pco2'].tolist()
             tempData += dfModel['temp'].tolist()
             #plot the results
@@ -92,7 +95,7 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
                 fullArrTr = zip(pop,temp,pco2,time)#make list of lists
                 fullArr.append(runArr)#add the data from the run into the 2dList
     dfData = pd.DataFrame({'temp':tempData, 'pco2':pco2Data})
-    return dfModel, dfData
+    return dfModel, dfData, equilibrium, eqTemp
         #end = time.time()
     #print( "Elapsed Time: " + str(end-start))
     
@@ -180,23 +183,26 @@ def printFolder():
         for dirname in dirs:
             print(dirname)
             
-def runProgram(driver,nameList,output): #run the program with the given name  
+def runProgram(driver,nameList,output,showInputs): #run the program with the given name  
     #make temporary directory to run in
     with tempfile.TemporaryDirectory() as dirpath:
         runFolder = newFolder(nameList,dirpath) #make the temporary folder
         
         call("./"+driver,shell=True) #run the driver
-        
+
+        if(showInputs):
+            for i in nameList['ebm']:  print(i,": ",nameList['ebm'][i])
         dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = readOutput() #read output into datframe
         
         os.chdir(notePath)
         call("rm -rf tmp*", shell=True)#delete the temporary folder and unlink it's contents
         if(output):
             if(equilibrium):
-                print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime)) 
-                print('Final Temp(K): ' + str(finalavgtemp));
-                print('Final Temp(F): ' + str(round((finalavgtemp-273.15)*(9/5)+32, 2)));
-                print('')
+                if(nameList['ebm']['lverbose']):
+                    print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime)) 
+                    print('Final Temp(K): ' + str(finalavgtemp));
+                    print('Final Temp(F): ' + str(round((finalavgtemp-273.15)*(9/5)+32, 2)));
+                    print('')
             else:
                 print("Equilibrium was not reached")
                 print('')

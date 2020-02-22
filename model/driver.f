@@ -683,23 +683,26 @@ c ZONAL SEASONAL AVERAGES
  732  continue
       shtempave    = shtempave / (nbelts/2)
       nhtempave    = nhtempave / (nbelts/2)
-      print *, "SH/NH temperature difference = ", shtempave - nhtempave
+c      print *, "SH/NH temperature difference = ", shtempave - nhtempave
+      write(*,*) 'Equilibrium Temp: ', opT
       write(*,*) 'Final Avg Temp: ', ann_tempave
-      write(*,*) 'Final Avg Albedo: ', ann_albave
+c      write(*,'(a,f9.3)') ' Overall dTemp: ', (ann_tempave-opT)
+c      write(*,*) 'Final Avg Albedo: ', ann_albave
+      write(*,*) 'Coupling: ',coupled
       write(*,'(a,f9.3,a)') ' Final Population:' , Npop/1000, ' billn'
       write(*,'(a,f9.0)') ' Initial pCO2: ', pco20*10**6
+      write(*,'(a,f9.3,a)') ' Carrying Capacity: ',Nmax/1000, ' billn'
       write(*,'(a,f9.0)') ' Final pCO2: ', pco2*10**6
-      write(*,'(a,f9.3,a)') ' Distance: ',sqrt(relsolcon)**(-1), " AU"
-      write(*,*) 'Coupling: ',coupled
-      write(*,'(a,f15.3)') ' Overall dPCO2: ', (pco2-pco20)*10**6
-      write(*,'(a,f9.3)') ' Initial Birth Rate: ',rBirthTech0
-      write(*,'(a,f9.3)') ' Final Birth Rate: ',rBirth
-      write(*,'(a,f9.3)') ' Overall dTemp: ', (ann_tempave-opT)
+c      write(*,'(a,f15.3)') ' Overall dPCO2: ', (pco2-pco20)*10**6
+      write(*,'(a,f20.10)') ' Initial Birth Rate: ',rBirthTech0
+      write(*,'(a,f20.10)') ' Final Birth Rate: ',rBirth
       write(*,'(a,f9.3)') ' Initial Death Rate: ',rDeath0
       write(*,'(a,f9.3)') ' Final Death Rate: ',rDeath
-      write(*,'(a,f9.3,a)') ' Maximum Population: ',Nmax/1000, ' billn'
-      write(*,'(a,f9.3)') ' Max Birth Rate Specified: ',rBirthMax
-      write(*,*) 'Max Birth Rate Reached?: ', maxReached
+      write(*,'(a,f9.3,a)') ' Distance: ',sqrt(relsolcon)**(-1), " AU"
+      write(*,'(a,f15.7)') ' Input dP: ', dpco2
+      write(*,'(a,f15.7)') ' Input dT: ', dtemp
+c      write(*,'(a,f9.3)') ' Max Birth Rate Specified: ',rBirthMax
+c      write(*,*) 'Max Birth Rate Reached?: ', maxReached
       zntempave(nbelts+1) = zntempave(nbelts)  !**for ice-line calculation
 c
 c  FIND ICE-LINES (ANNUAL-AVERAGE TEMP < 263.15K)
@@ -851,11 +854,15 @@ c
       if(equilibrium) then
       if(coupled) then
 
-c     Population Control Here
+c     Model 0
       rBirth = rBirth0*(1+ (pco2-pco20)/(dpco2) )
       rDeath = rDeath0*(1+((ann_tempave-opT)/(dtemp))**2)
       Npoprev = Npop
       Npop = max(Npop+min(rBirth*Npop, rDeath0*Nmax) - rDeath*Npop,1.00)
+
+c     Model 1
+c      Npop = Npop + min(rBirth*Npop, rDeath*Nmax) - rDeath*Npop
+c     &                     -  rBirth*Npop*((ann_tempave-opT)/(dtemp))**2
       else
         rBirth = rBirth0
         rGrowth = rBirth0 - rDeath0
