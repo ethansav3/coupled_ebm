@@ -53,7 +53,8 @@ c----------------------------------------------------------------------c
      &  iravesum,iceline,icelat,icesht
       real*8  ecc,m,e,counter,runTime,dtemp, dpco2
       real*8 rBirth0,rBirthMax,rDeath,opT,Npop,N0,Nmax,
-     &       rGrowth, fragility, rBirth, rTech, Npoprev !Population Parameters
+     &       rGrowth, fragility, rBirth, rTech, Npoprev, 
+     &       Npeak, tPeak !Population Parameters
       real*8 rco2,En, En0, pco20, eqTemp, rDeath0 !Coupling Parameters
       logical :: coupled = .false.
       logical :: lverbose = .false.
@@ -138,6 +139,8 @@ c  INITIALIZE VARIABLES
       oblrad = obl*pi/180
       Npop   = N0
       Npoprev = Npop
+      Npeak = N0
+      tPeak = 0
       En = En0
       rDeath = rDeath0
       rBirth = rBirth0
@@ -689,6 +692,7 @@ c      print *, "SH/NH temperature difference = ", shtempave - nhtempave
 c      write(*,'(a,f9.3)') ' Overall dTemp: ', (ann_tempave-opT)
 c      write(*,*) 'Final Avg Albedo: ', ann_albave
       write(*,*) 'Coupling: ',coupled
+      write(*,'(a,f9.3,a)') ' Peak Population:' , Npeak/1000, ' billn'
       write(*,'(a,f9.3,a)') ' Final Population:' , Npop/1000, ' billn'
       write(*,'(a,f9.0)') ' Initial pCO2: ', pco20*10**6
       write(*,'(a,f9.3,a)') ' Carrying Capacity: ',Nmax/1000, ' billn'
@@ -859,7 +863,15 @@ c     Model 0
       rDeath = rDeath0*(1+((ann_tempave-opT)/(dtemp))**2)
       Npoprev = Npop
       Npop = max(Npop+min(rBirth*Npop, rDeath0*Nmax) - rDeath*Npop,1.00)
-
+      if( (Npop - Npoprev) .gt. 0) then
+            Npeak = Npop
+            tPeak = counter
+      end if  
+      if( (counter - tPeak) .ge. 500) then
+        write(*,*) '25 Generations have Occured after the population'
+     &                ,' peaked'
+        stop
+      end if
 c     Model 1
 c      Npop = Npop + min(rBirth*Npop, rDeath*Nmax) - rDeath*Npop
 c     &                     -  rBirth*Npop*((ann_tempave-opT)/(dtemp))**2

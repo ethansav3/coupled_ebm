@@ -23,7 +23,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
     temp = np.asarray(df['temp'])
     pop = np.asarray(df['pop'])
     pco2=np.asarray(df['pco2'])
-    
+    finalTemp = df['temp'][df.index[-1]]
     timer = timer/60/60/24/365.25; #convert seconds to years
     timer = timer+1820;
     pop = pop/1000
@@ -37,8 +37,8 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
      'ytick.labelsize': 26.0,
      'legend.fontsize': 17.0})
     fig, ax = plt.subplots(figsize=(12.25,7),dpi=200) #set up figure
-    fig.suptitle("      Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl"+",    $\Gamma:$ " +str(round(dimVar,3)),x=.41,fontsize=23)
-    ax.set_ylim(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),eqTemp+inputs[3]+(5/100)*(max(temp)-min(temp)))
+    fig.suptitle("      Distance: " + str(round(inputs[0],4)) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl"+",    $\Gamma:$ " +str(round(dimVar,3)),x=.41,fontsize=23)
+    ax.set_ylim(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),finalTemp)
     
     line = ax.scatter(pop,temp,c=pco2,cmap='jet')
     fig.colorbar(line,label='pCO2 (ppm)')
@@ -57,7 +57,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
     plt.show() 
 #----------Normal Plots----------------------------------------------------------------------------------------
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(24.5,11.8),dpi=200) #set up figure, share the x axis
-    fig.suptitle("       Distance: " + str(inputs[0]) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $\Gamma:$ " +str(round(dimVar,3)),x=.40,fontsize=41)
+    fig.suptitle("       Distance: " + str(round(inputs[0],4)) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $\Gamma:$ " +str(round(dimVar,3)),x=.40,fontsize=41)
      #plot time vs temp (K)
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
@@ -66,8 +66,8 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
     linestyle='--'
     alpha=.5
     
-    ax1.set_xlim(min(timer),min(timer)+inputs[2])
-    ax1.set_ylim(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),eqTemp+inputs[3]+(5/100)*(max(temp)-min(temp)))
+    ax1.set_xlim(min(timer),max(timer))
+    ax1.set_ylim(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),max(temp)+(5/100)*(max(temp)-min(temp)))
     ax1.set_yticks(np.linspace(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),max(temp)+(5/100)*(max(temp)-min(temp)),4))
     
     sns.set_style('darkgrid')
@@ -85,16 +85,16 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar):
     ax2.axhline(y=popStats['finalPop'],c='orangered',label='$N_{final}=$'+str(round(popStats['finalPop'],1))+" billion")  
     ax1.axhline(y=eqTemp,c='b',label='$T_{eq}=$'+str(round(eqTemp))+" K")
     ax1.axhline(y=eqTemp+inputs[3],c="springgreen",label='$T_{eq}+\Delta T=$'+str(round(eqTemp+inputs[3]))+" K")
-    ax1.axhline(y=eqTemp+2*inputs[3],c='orangered',label='$T_{eq}+2\Delta T=$'+str(round(eqTemp+2*inputs[3]))+" K")
+#    ax1.axhline(y=eqTemp+2*inputs[3],c='orangered',label='$T_{eq}+2\Delta T=$'+str(round(eqTemp+2*inputs[3]))+" K")
        #vertical lines
 #   ax2.axvline(x=(popStats['LhalfTime']+1820),linestyle='--',c=(0,0,.7))
 #    ax1.axvline(x=(popStats['LhalfTime']+1820),linestyle='--',c=(0,0,.7),label="$t_{1/2}^{-}=$"+str(int((popStats['LhalfTime']+1820))))
     ax2.axvline(x=(popStats['maxTime']+1820),c='b',linestyle='--') 
     ax1.axvline(x=(popStats['maxTime']+1820),c='b',linestyle='--',label="$t_{peak}=$"+str(int((popStats['maxTime']+1820))))
-    ax2.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c="orangered")
-    ax1.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c="orangered",label="$t_{1/2}=$"+str(int((popStats['UhalfTime']+1820)))) 
+#    ax2.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c="orangered")
+#    ax1.axvline(x=(popStats['UhalfTime']+1820),linestyle='--',c="orangered",label="$t_{1/2}=$"+str(int((popStats['UhalfTime']+1820)))) 
     
-    ax2.set_xlim(min(timer),min(timer)+inputs[2])
+    ax2.set_xlim(min(timer),max(timer))
     ax2.set_ylim(min(pop),popStats['maxPopPlot'])
     fig.colorbar(line2,label='pCO2 (ppm)',ax=[ax1,ax2])
     ax2.legend(loc='best', prop={'size': 30})

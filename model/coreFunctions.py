@@ -19,7 +19,7 @@ notePath = os.getcwd()
 fullArr=[]
 fullArrTr = []
 fullMaxPop=0
-def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopList,distList,showInputs):
+def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopList,distList,showInputs,experiment=1):
     saveName= 0
     count   = 0
     numCols = 4
@@ -30,54 +30,66 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
 #    allData['pco2'] = []
 #    allData['temp'] = []
 #    for j in np.linspace(10,100,numCols):
-    for j in [nameList['ebm']['Nmax']]:#pop loops
+#    for j in [nameList['ebm']['Nmax']]:#pop loops
+    for j in maxPopList:#pop loops
         newMaxPop=int(j)#change max pop
 #        newA = .9#change distance (AU)
         dA=.01
         popStats = {}
-#        minA, maxA, fullMaxPop, fullMaxPopA = habitableZone(nameList,newMaxPop,newA,runTime,dA)
-#        print("The Habitable Zone for maxPop="+str(round(newMaxPop/1000)) + " billion is:")
-#        print("Minimum: "+str(minA) + " AU")
-#        print("Maximum: "+str(maxA)+" AU")
-#        print("Max Pop Reached: " + str(fullMaxPop)+ " billion" + ", at Distance: " + str(round(fullMaxPopA,3))+"\n")        
-#        for i in np.linspace(minA,maxA,numRows):#distance loops
-#            count += 1
-#            print(str( (count/(numCols*numRows))*100 ) + "% Until Completion" )
-        dictdTdP= {
-        0.94 : 7.967*10**-2,
-        0.97 : 4.94*10**-3,
-        1.00 : 3.378*10**-3,
-        1.03 : 1.959*10**-2,
-        1.06 : 6.554*10**-4
-        }
-        for i in [nameList['ebm']['relsolcon']**-(1/2)]:#distance 
-#            dimVar = (nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])/(newMaxPop*nameList['ebm']['rco2']*dictdTdP[i])
-            #dimVar=(newMaxPop*nameList['ebm']['rco2']*dictdTdP[i])/(nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])
-            dimVar=0
-            if(nameList['ebm']['lverbose']==True):
+        if(experiment == 1):
+            dictdTdP= {
+            0.94 : 6.178*10**-2,
+            0.96 : 1.655*10**-2,
+            0.98 : 1.044*10**-2,
+            1.00 : 8.838*10**-3,
+            1.02 : 9.067*10**-3
+            }
+        if(experiment == 2):
+            dictdTdP= {
+            0.97 : 3.573*10**-2,
+            1.0025 : 1.861*10**-3,
+            1.035 : 4.297*10**-4,
+            1.0675 : 1.464*10**-4,
+            1.1 : 8.629*10**-5
+            }
+            dictPco20= {
+            0.97 : 20,
+            1.0025 : 2750,
+            1.035 : 21500,
+            1.0675 : 62500,
+            1.1 : 130500
+            }
+#        for i in [nameList['ebm']['relsolcon']**-(1/2)]:#distance 
+        for i in distList:#distance 
+            #            dimVar = (nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])/(newMaxPop*nameList['ebm']['rco2']*dictdTdP[i]):
+            if coupled: dimVar=(j*nameList['ebm']['rco2']*dictdTdP[i])/(nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])
+            if not coupled:
+                dimVar=0
+            if experiment ==2: nameList['ebm']['pco20'] = dictPco20[i]*10**-6
+            if(nameList['ebm']['lverbose']):
                 print("rBirth0: " + str(nameList['ebm']['rBirth0']))
                 print("dT: " + str(nameList['ebm']['dtemp']))
                 print("rco2: " + str(nameList['ebm']['rco2']))
-                print("maxPop: " + str(newMaxPop))
-                #print("dTdP: " +str(dictdTdP[i]))
-                print("Dimensionless Variable: " + str(dimVar))
-
+                print("maxPop: " + str(j/1000),"billion")
+                if coupled: print("dTdP: ",dictdTdP[i])
+                print("Distance: " +str(round(i,4)))
+                print("Dimensionless Variable: " + str(round(dimVar,5)))
             #calculate inputs
-            newA = round(i,3) #change distance (AU)
+            newA = round(i,4) #change distance (AU)
             nameList['ebm']['coupled']=coupled
             nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
             nameList['ebm']['runTime'] = runTime#change runtime
             nameList['ebm']['Nmax'] = newMaxPop #change carrying capacity
             dtemp = nameList['ebm']['dtemp'] 
             #run program
-            dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram(driverName,nameList,True,showInputs)#False=no output
+            dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram(driverName,nameList,True,showInputs,dimVar)#False=no output
             pco2Data += dfModel['pco2'].tolist()
             tempData += dfModel['temp'].tolist()
             #plot the results
             if coupled and equilibrium:
                 inputRunTime = runTime #how long I originally specified
                 outputRunTime = math.ceil( dfModel['time_yrs'].iloc[-1] )#how long it actually ran
-                if ((inputRunTime - outputRunTime) <= 3) and analyze:
+                if  analyze:
                     popStats = analyzeRun(dfModel,nameList, False)#if True, then Print Dictionary Values
                     fullMaxPop=popStats["maxPop"]
                     popStats['maxPopPlot']=fullMaxPop+(3/100)*fullMaxPop#maximum population range
@@ -94,6 +106,10 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
                 runArr= [pop,temp,pco2,time]#make list of lists
                 fullArrTr = zip(pop,temp,pco2,time)#make list of lists
                 fullArr.append(runArr)#add the data from the run into the 2dList
+            if coupled and (not equilibrium):
+                if lverbose: print("Coupled, but no Equilibrium was reached")
+            if (not coupled) and equilibrium:
+                if lverbose: print("Not coupled, but Equilibrium was reached")
     dfData = pd.DataFrame({'temp':tempData, 'pco2':pco2Data})
     return dfModel, dfData, equilibrium, eqTemp, eqTime
         #end = time.time()
@@ -104,8 +120,8 @@ def analyzeRun(dfModel,nameList,verbose):
     maxima = dfModel.max();#find maxima from all columns in df
     maxPop = maxima[3];#find maxima in population column, peak popultion
     finalPop = dfModel['pop'][dfModel.index[-1]]
- #   print(maxPop)#peak population
- #   print(finalPop)
+   # print(maxPop)#peak population
+   # print(finalPop)
     maxPopIndex = dfModel.loc[dfModel['pop']==maxPop].index#search rows for index of max pop
     maxPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
     halfPop=maxPop/2;
@@ -165,7 +181,7 @@ def habitableZone(nameList,newMaxPop,newA,runTime,dA):
             count+=1
         if(life and (count > 0)):#in the habitable zone, make it maxA
             if coupled:
-                popStats = analyzeRun(dfModel,nameList,False)
+                popStats = analyzeRun(dfModel,nameList,True)
                 maxPop = popStats["maxPop"]
                 if(maxPop >= fullMaxPop):
                     fullMaxPop = maxPop
@@ -183,7 +199,7 @@ def printFolder():
         for dirname in dirs:
             print(dirname)
             
-def runProgram(driver,nameList,output,showInputs): #run the program with the given name  
+def runProgram(driver,nameList,output,showInputs,dimVar): #run the program with the given name  
     #make temporary directory to run in
     with tempfile.TemporaryDirectory() as dirpath:
         runFolder = newFolder(nameList,dirpath) #make the temporary folder
@@ -199,9 +215,11 @@ def runProgram(driver,nameList,output,showInputs): #run the program with the giv
         if(output):
             if(equilibrium):
                 if(nameList['ebm']['lverbose']):
-                    print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime)) 
+#                    print("Dimensionless Variable: ",str(round(dimVar,5)))
                     print('Final Temp(K): ' + str(finalavgtemp));
                     print('Final Temp(F): ' + str(round((finalavgtemp-273.15)*(9/5)+32, 2)));
+                    print('Equilibrium Reached at Temp=' + str(eqTemp)+". At time="+str(eqTime)) 
+                    print('Equilibrium Temp(F): ' + str(round((eqTemp-273.15)*(9/5)+32, 2)));
                     print('')
             else:
                 print("Equilibrium was not reached")
@@ -232,20 +250,20 @@ def makeDefNamelist():
             'fcloud' : 0.50,
             'd0' : 0.58, #initial diffusion coefficient
             'N0' : 1129,
-            'Nmax' : 10200,
-            'rBirth0' : 0.02,
+            'Nmax' : 10000,
+            'rBirth0' : 0.04,
             'rBirthMax' : 0.83,
-            'rDeath0' : 0.015,
+            'rDeath0' : 0.036,
             'rTech' : 1.00,
             'opT' : 290.5,
-            'rco2' : 1.9e-4,#3.459e-4,
+            'rco2' : 0.000275,#3.459e-4,
             'En0' : 1.00,
             'fragility' : 1.00,
             'coupled' : True,
             'lverbose' : True,
             'runTime' : 100,
-            'dtemp' : 1.73,
-            'dpco2' : 6.3e-5
+            'dtemp' : 5,
+            'dpco2' : 200e-6
         }
     }
     return nml
