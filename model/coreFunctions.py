@@ -9,6 +9,7 @@ import numpy as np
 from math import *
 import pandas as pd 
 import seaborn as sns
+from scipy.stats import linregress
 from statistics import *
 import shutil
 import sys
@@ -19,18 +20,23 @@ notePath = os.getcwd()
 fullArr=[]
 fullArrTr = []
 fullMaxPop=0
-def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopList,distList,showInputs,experiment=1):
+def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopList,distList,showInputs,experiment=1, printOutput=True, scaleInitPop=False):
     saveName= 0
     count   = 0
     numCols = 4
     numRows = 4
     tempData = []
     pco2Data = []
+    lverbose=nameList['ebm']['lverbose']
 #    allData = {}
 #    allData['pco2'] = []
 #    allData['temp'] = []
 #    for j in np.linspace(10,100,numCols):
 #    for j in [nameList['ebm']['Nmax']]:#pop loops
+    eqList = []
+    eqTempList = []
+    eqTimeList = []
+    popDeathList = []
     for j in maxPopList:#pop loops
         newMaxPop=int(j)#change max pop
 #        newA = .9#change distance (AU)
@@ -62,11 +68,22 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
 #        for i in [nameList['ebm']['relsolcon']**-(1/2)]:#distance 
         for i in distList:#distance 
             #            dimVar = (nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])/(newMaxPop*nameList['ebm']['rco2']*dictdTdP[i]):
-            if coupled: dimVar=(j*nameList['ebm']['rco2']*dictdTdP[i])/(nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])
+            initPop = nameList['ebm']['N0']
+            anthroPop = 0 # number of people required to force the climate out of equilibrium in a generation
+            if coupled: 
+                if experiment==1 or experiment==2: 
+                    dimVar=(j*nameList['ebm']['rco2']*dictdTdP[i])/(nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])
+                    anthroPop = (nameList['ebm']['rBirth0']*nameList['ebm']['dtemp'])/(nameList['ebm']['rco2']*dictdTdP[i])
+                else:
+                    dimVar = 0
+                    anthroPop = 0
+                if scaleInitPop: 
+                    nameList['ebm']['N0']=anthroPop/1000
+                    if lverbose: print(f"Initial Pop: {initPop} million,  AnthroPop: {anthroPop:.3f} million,  AnthroPop/1000: {anthroPop/10**3:.3f} million")
             if not coupled:
                 dimVar=0
             if experiment ==2: nameList['ebm']['pco20'] = dictPco20[i]*10**-6
-            if(nameList['ebm']['lverbose']):
+            if(lverbose and showInputs):
                 print("rBirth0: " + str(nameList['ebm']['rBirth0']))
                 print("dT: " + str(nameList['ebm']['dtemp']))
                 print("rco2: " + str(nameList['ebm']['rco2']))
@@ -82,15 +99,22 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
             nameList['ebm']['Nmax'] = newMaxPop #change carrying capacity
             dtemp = nameList['ebm']['dtemp'] 
             #run program
-            dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram(driverName,nameList,True,showInputs,dimVar)#False=no output
+            dfModel, finalavgtemp, eqTime, eqTemp, equilibrium, popDeath = runProgram(driverName,nameList,True,showInputs,dimVar, printOutput)#False=no output
+            eqList.append(equilibrium)
+            eqTempList.append(eqTemp)
+            eqTimeList.append(eqTime)
+            popDeathList.append(popDeath)
             pco2Data += dfModel['pco2'].tolist()
             tempData += dfModel['temp'].tolist()
             #plot the results
             if coupled and equilibrium:
                 inputRunTime = runTime #how long I originally specified
                 outputRunTime = math.ceil( dfModel['time_yrs'].iloc[-1] )#how long it actually ran
-                if  analyze:
-                    popStats = analyzeRun(dfModel,nameList, False)#if True, then Print Dictionary Values
+                if analyze:
+                    popStats = analyzeRun(dfModel,nameList, anthroPop, False)#if True, then Print Dictionary Values
+                    maxTime = popStats['maxTime']                  
+#                     if outputRunTime - maxTime < 50:
+#                         print("problem occured")
                     fullMaxPop=popStats["maxPop"]
                     popStats['maxPopPlot']=fullMaxPop+(3/100)*fullMaxPop#maximum population range
                 inputs=[newA,newMaxPop,runTime,dtemp]
@@ -107,15 +131,118 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
                 fullArrTr = zip(pop,temp,pco2,time)#make list of lists
                 fullArr.append(runArr)#add the data from the run into the 2dList
             if coupled and (not equilibrium):
-                if lverbose: print("Coupled, but no Equilibrium was reached")
+                if lverbose and printOutput: print("Coupled, but no Equilibrium was reached")
             if (not coupled) and equilibrium:
-                if lverbose: print("Not coupled, but Equilibrium was reached")
+                if lverbose and printOutput: print("Not coupled, but Equilibrium was reached")
     dfData = pd.DataFrame({'temp':tempData, 'pco2':pco2Data})
-    return dfModel, dfData, equilibrium, eqTemp, eqTime
-        #end = time.time()
-    #print( "Elapsed Time: " + str(end-start))
+    return dfModel, dfData, eqList, eqTempList, eqTimeList, popDeathList
+
     
-def analyzeRun(dfModel,nameList,verbose):
+def habitableZoneFinder_exp1(nameList, lverbose, showOutput=True):
+    '''Given a nameList of values, this function outputs the
+    temperature defined habitable zone'''
+    minD = 0
+    maxD = 0
+    pco20 = 284                           
+    nameList['ebm']['pco20']=pco20*10**-6  #Convert initial pCO2 to Bars
+    newA = 1       
+    dA = .001
+    while(True):    
+        distList = [newA]
+        nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
+        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+        if(not eq):
+            minD = newA
+            print("Minimum Distance: ", minD)
+            break
+        else:
+            newA -= dA
+            if lverbose: print("Distance: ",newA,",    Equilibrium Temp: ", eqTemp )
+    pco20 = 284                        
+    nameList['ebm']['pco20']=pco20*10**-6  #Convert initial pCO2 to Bars
+    newA = 1            
+    while(True):    
+        distList = [newA]
+        nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
+        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+        if(eqTemp < 273.15):
+            maxD = newA
+            print("Maximum Distance", maxD)
+            break
+        else:
+            if lverbose: print("Distance: ",newA,",    Equilibrium Temp: ",eqTemp )
+            newA += dA
+    return minD, maxD
+    
+def habitableZoneFinder_exp2(namelist, lverbose=False):
+    '''Given a nameList of values, this function outputs the
+    pco2 defined habitable zone'''
+    minA, maxA = 0,0
+    newA = 1
+    dA = 0.001
+    while(True):#find minimum distance
+        pco2Earth = pco2Finder(287.09, nameList, newA, lverbose=False)
+        if lverbose: print(f"Distance: {newA},  pCO2: {pco2Earth}")
+        if(np.isnan(pco2Earth)): 
+            minA = newA
+            print(f"Min: {minA}")
+            break
+        else:
+            newA -= dA
+    newA=1
+    while(True):#find maximum distance
+        pco2Earth = pco2Finder(287.09, nameList, newA, lverbose=False)
+        if lverbose: print(f"Distance: {newA},  pCO2: {pco2Earth}")
+        if(pco2Earth >= 10**5): 
+            maxA = newA
+            print(f"Max: {maxA}")
+            break
+        else:
+            newA += dA    
+    return minA, maxA
+    
+def roomPco2(nameList,distList):
+    '''
+    Returns value of pCO2 that will make the equilibrium
+    temperature approximately room temperature.
+    '''
+    pco20 = 10
+    pco2Room=0
+    count=0
+    while(True): #find initial pco2 such that temp is > 295 (about 70 fahrenheit)
+        nameList['ebm']['pco20']=pco20/10**6
+        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, coupled, runTime, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs,experiment=2)
+        if(eqTemp >= 295):
+            pco2Room = pco20 #the value of pco2 which makes temp be habitable for humans
+            print("\n","Distance: ",round(distList[0],4),"\n Room pCO2: ", round(pco2Room,4))
+            print(" Number of Iterations: ", count)
+            print(" Room Temp: ", eqTemp," Kelvin")
+            print(" Room Temp: ", round((eqTemp-273.15)*(9/5)+32,2)," Fahrenheight","\n")
+            break
+        else:
+            pco20 *= 1.5
+            count += 1
+    return roomPco2
+
+
+def outlierFinder(tempList,eqTemp,inCount):    
+    '''Given current temperature array, size of
+    current temperature array, and a temperature,
+    returns true if the current temperature is
+    NOT an outlier.  If it IS an outlier, return False.'''
+    if(inCount > 5):
+        data_mean, data_width = np.mean(tempList), np.std(tempList)
+        cut_off = data_width*4 #find cutoff for outliers
+        lower, upper = data_mean - cut_off, data_mean + cut_off
+        if((eqTemp < lower) or (eqTemp > upper)):
+            print("outlier detected!!! \n Mean Temp: ", data_mean, "\n Equilibrium Temp: ", eqTemp )
+            return False
+        else:
+            return True
+    else:
+        return True
+
+def analyzeRun(dfModel, nameList, anthroPop, verbose):
     counter = 0
     maxima = dfModel.max();#find maxima from all columns in df
     maxPop = maxima[3];#find maxima in population column, peak popultion
@@ -148,17 +275,287 @@ def analyzeRun(dfModel,nameList,verbose):
             UhalfPop = newDF.time_yrs.iloc[-1]      #new dataframe, time column, last row
     except TypeError:
         print('')
-
-    #maxPopPlot=40
-
-    #dictionary of population statistics
     popStats={'maxPop' : (maxPop/1000), 'maxTime': maxPopTime.mean(),
               'halfPop': (halfPop/1000),'LhalfTime': LhalfPop, 'UhalfTime': UhalfPop,
-              'maxPopPlot': maxPop/1000, 'finalPop': (finalPop/1000)}#maximum plotting range for population
+              'maxPopPlot': maxPop/1000, 'finalPop': (finalPop/1000), 'initPop' : nameList['ebm']['N0'],
+              'anthroPop' :anthroPop }#maximum plotting range for population
     if(verbose):
         for k,v in popStats.items():
             print(k + " = " +str(v))
     return popStats
+
+# def pco2Finder(goalEqTemp, nameList, distance, lverbose=False):
+#     '''Given a temperature and a nameList,
+#     outputs the value of pco2 at this distance
+#     that would result in the given temp'''
+#     distList = [distance]
+#     currEqTemp = 0
+#     pco20    = 10.3
+#     nameList['ebm']['pco20'] = pco20*10**-6
+#     goalPco2 = 0
+#     dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+#     if(eqTemp >= goalEqTemp):
+#         return np.nan
+#  #   print(f"Equilbrium Reached at temp: {eqTemp:.2f}, and time: {eqTime:.0f}","\n")
+#     while(True):
+#         if(currEqTemp >= goalEqTemp):
+#             goalPco2 = pco20
+#             break
+#         if(goalEqTemp-currEqTemp > 50):
+#             pco20 *= 1.5 #increment pco2 by 1% of its value
+#             nameList['ebm']['pco20'] = pco20*10**-6
+#             dfModel,dfData,eq, eqTemp, eqTime, popDeath  = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+#             currEqTemp = eqTemp
+#             if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp:.2f}, and time: {eqTime:.0f}","\n")
+#         if(goalEqTemp-currEqTemp <= 50):
+#             pco20 += 0.1*pco20
+#             nameList['ebm']['pco20'] = pco20*10**-6
+#             dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+#             if np.isnan(eqTemp): return np.nan
+#             currEqTemp = eqTemp
+#             if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp:.2f}, and time: {eqTime:.0f}","\n")
+#     return round(goalPco2,3)
+
+def regionSweep_exp1(distances, nameList, verbose=False):
+    '''Does a parameter sweep of the region of parameter
+    space occupied by some distance (or list of distances),
+    returns a dictionary containing all relevant data'''
+    # for i in :
+    iniTemp = 0
+    prevTemp = 0
+    eqTemp = 0
+    outCount=0
+    dictDataExp1 = {}
+    for i in distances:
+        dP = 5
+        pco20 = 284
+        inCount = 0
+        pco2List = []
+        tempList = []
+        distList = [i]
+        maxPopList = [10000]
+        nameList['ebm']['pco20']=pco20/10**6
+        if(inCount == 0):# if first loop, set final temp to initial temp
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+            finalTemp = dfModel['temp'][dfModel.index[-1]] #find final temperature
+            iniTemp = eqTemp
+            if verbose: print(inCount,")","  dT: ", round(abs(eqTemp - iniTemp),4) ,", pco20: ",pco20,", distance: ",i)
+            if verbose: print("Initial Temp: ", iniTemp)
+            if verbose: print("\n")
+            pco20 -= dP
+        while(abs(eqTemp - iniTemp) < 2): #increment pco2s until dT >= 5
+            nameList['ebm']['pco20']=pco20/10**6
+            prevTemp = eqTemp
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+            if eq:
+                finalTemp = dfModel['temp'][dfModel.index[-1]] #find final temperature
+                if(outlierFinder(tempList,eqTemp,inCount)):
+                    pco2List.append(pco20)
+                    tempList.append(eqTemp)
+                    outCount += 2 #counter used to index arrays
+                    inCount += 1 #counter used to specify initial temp
+                    if verbose: print(inCount,")","  dT: ", round(abs(eqTemp - iniTemp),4) ,", pco20: ",pco20,", distance: ",i)
+                    if verbose: print("Equilibrium Temp: ",round(eqTemp,2))
+                    if verbose: print("\n")
+            pco20 -= dP
+        pco20 = 284
+        inCount = 0
+        nameList['ebm']['pco20']=pco20/10**6
+        if(inCount == 0):# if first loop, set final temp to initial temp
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+            iniTemp = eqTemp
+            if verbose: print(inCount,")","  dT: ", round(abs(eqTemp - iniTemp),4) ,", pco20: ",pco20,", distance: ",i)
+            if verbose: print("Initial Temp: ", iniTemp)
+            if verbose: print("\n")
+            pco20 += dP
+        while(abs(eqTemp - iniTemp) < 2): #increment pco2s until dT >= 5
+            nameList['ebm']['pco20']=pco20/10**6
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+            if eq:
+                finalTemp = dfModel['temp'][dfModel.index[-1]] #find final temperature
+                if(outlierFinder(tempList,eqTemp,inCount)): #if not an outlier
+                    pco2List.append(pco20)
+                    tempList.append(eqTemp)
+                    outCount += 2 #counter used to index arrays
+                    inCount += 1 #counter used to specify initial temp
+                    if verbose: print(inCount,")","  dT: ", round(abs(eqTemp - iniTemp),4) ,", pco20: ",pco20,", distance: ",i)
+                    if verbose: print("Equilibrium Temp: ",round(eqTemp,2))
+                    if verbose: print("\n")
+            pco20 += dP
+        dictDataExp1[outCount-1] = pco2List
+        dictDataExp1[outCount] = tempList
+    return dictDataExp1
+
+def regionSweep_exp2(distances, nameList, verbose=False):
+    '''Does a parameter sweep of the region of parameter
+    space occupied by some distance (or list of distances),
+    returns a dictionary containing all relevant data'''
+    # for i in :
+    iniTemp = 0
+    prevTemp = 0
+    eqTemp = 0
+    outCount=0
+    dictPco20= {
+    0.975 : 16.6995,
+    1.0075 : 1153.772,
+    1.040 : 13163.057,
+    1.0725 : 43430.96,
+    1.105 : 97719.659
+    }
+    dictDataExp2 = {}
+    for i in distances:
+        dP = 5
+        pco20 = dictPco20[i]
+        inCount = 0
+        pco2List = []
+        tempList = []
+        distList = [i]
+        maxPopList = [10000]
+        nameList['ebm']['pco20']=pco20/10**6
+        if(inCount == 0):# if first loop, set final temp to initial temp
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+            finalTemp = dfModel['temp'][dfModel.index[-1]] #find final temperature
+            iniTemp = eqTemp
+            if verbose: print(inCount,")","  dT: ", round(abs(eqTemp - iniTemp),4) ,", pco20: ",pco20,", distance: ",i)
+            if verbose: print("Initial Temp: ", iniTemp)
+            if verbose: print("\n")
+            pco20 -= dP
+        while(abs(eqTemp - iniTemp) < 2): #increment pco2s until dT >= 5
+            nameList['ebm']['pco20']=pco20/10**6
+            prevTemp = eqTemp
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+            if eq:
+                finalTemp = dfModel['temp'][dfModel.index[-1]] #find final temperature
+                if(outlierFinder(tempList,eqTemp,inCount)):
+                    pco2List.append(pco20)
+                    tempList.append(eqTemp)
+                    outCount += 2 #counter used to index arrays
+                    inCount += 1 #counter used to specify initial temp
+                    if verbose: print(inCount,")","  dT: ", round(abs(eqTemp - iniTemp),4) ,", pco20: ",pco20,", distance: ",i)
+                    if verbose: print("Equilibrium Temp: ",round(eqTemp,2))
+                    if verbose: print("\n")
+            pco20 -= dP
+        pco20 = dictPco20[i]
+        inCount = 0
+        nameList['ebm']['pco20']=pco20/10**6
+        if(inCount == 0):# if first loop, set final temp to initial temp
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+            iniTemp = eqTemp
+            if verbose: print(inCount,")","  dT: ", round(abs(eqTemp - iniTemp),4) ,", pco20: ",pco20,", distance: ",i)
+            if verbose: print("Initial Temp: ", iniTemp)
+            if verbose: print("\n")
+            pco20 += dP
+        while(abs(eqTemp - iniTemp) < 2): #increment pco2s until dT >= 5
+            nameList['ebm']['pco20']=pco20/10**6
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, False, False, False,"driver.exe",[10000],distList,False, printOutput=False)
+            if eq:
+                finalTemp = dfModel['temp'][dfModel.index[-1]] #find final temperature
+                if(outlierFinder(tempList,eqTemp,inCount)): #if not an outlier
+                    pco2List.append(pco20)
+                    tempList.append(eqTemp)
+                    outCount += 2 #counter used to index arrays
+                    inCount += 1 #counter used to specify initial temp
+                    if verbose: print(inCount,")","  dT: ", round(abs(eqTemp - iniTemp),4) ,", pco20: ",pco20,", distance: ",i)
+                    if verbose: print("Equilibrium Temp: ",round(eqTemp,2))
+                    if verbose: print("\n")
+            pco20 += dP
+        dictDataExp2[outCount-1] = pco2List
+        dictDataExp2[outCount] = tempList
+    return dictDataExp2
+
+
+def linearRegressions(dictData, distLin, plotSlopes=False, plotData=False):
+    '''Finds slopes, given data and distances'''
+    slopes = []
+    distances = []
+    fitErrors = [] 
+    dictDistances = {}
+    #----------------------------------------------dTdP--------------------------------------------
+    for i,v in enumerate(distLin):
+        dictDistances[i] = v
+    distNum = 0
+    count = 0
+    for k,v in dictData.items():
+        count +=1
+        if(count==1): 
+            pco2Listing = v; #list of pco2 values
+            print("Distance: ",dictDistances[distNum])
+            distances.append(dictDistances[distNum])
+        if(count==2): 
+            tempListing = v; #list of temp values
+            print("pco2 length: ",len(pco2Listing))
+            print("temp length: ",len(tempListing))
+            m = linregress(pco2Listing,tempListing).slope
+            slopes.append(m)#-------------------------------------------add to slope array
+            b = linregress(pco2Listing,tempListing).intercept
+            error = linregress(pco2Listing,tempListing).stderr
+            fitErrors.append(error)#------------------------------------add to error array
+            print("Slope: " + str("{:.3e}".format(m)))
+            print("Intercept: ",round(b))
+            if plotData:
+                plt.scatter(pco2Listing,tempListing,label='Model Runs',alpha=.5,s=10)
+                plt.plot(pco2Listing,np.asarray(pco2Listing)*m+b,label='linear fit',color="orange")
+                plt.legend(loc='best')
+                plt.show()
+            print("\n")
+            count = 0
+            tempListing = []
+            pco2Listing = []
+            distNum += 1
+    if plotSlopes:
+        sns.set_context("paper")
+#         plt.figure(1)
+        plt.plot(distances,slopes)# from scipy.stats import linregress
+        #plt.scatter(distances[1],slopes[1])# from scipy.stats import linregress
+        # plt.errorbar(distances, slopes, yerr = fitErrors,fmt='o',capthick=3,ms=5,uplims=True,lolims=True)
+        plt.errorbar(distances, slopes, yerr = fitErrors,fmt='o',capthick=3,ms=5,c='black',label="Constant Temperature")
+        plt.title("dT/dP vs Orbital Distance");
+        plt.xlabel("Distance (AU)");
+        plt.ylabel("dTdP (Kelvin/ppm)");
+        plt.legend()
+        plt.show()
+        plt.close('all')
+    #----------------------------------------------dPdT--------------------------------------------
+    slopes = []
+    distances = []
+    fitErrors = [] 
+    dictDistances = {}
+    for i,v in enumerate(distLin):
+        dictDistances[i] = v
+    distNum = 0
+    count = 0
+    for k,v in dictData.items():
+        count +=1
+        if(count==1): 
+            pco2Listing = v; #list of pco2 values
+     #       print("Distance: ",dictDistances[distNum])
+            distances.append(dictDistances[distNum])
+        if(count==2): 
+            tempListing = v; #list of temp values
+            m = linregress(tempListing,pco2Listing).slope
+            slopes.append(m)#-------------------------------------------add to slope array
+            b = linregress(tempListing,pco2Listing).intercept
+            error = linregress(tempListing,pco2Listing).stderr
+            fitErrors.append(error)#------------------------------------add to error array
+            count = 0
+            tempListing = []
+            pco2Listing = []
+            distNum += 1
+    if plotSlopes:
+        sns.set_context("paper")
+  #      plt.figure(2)
+        plt.plot(distances,slopes)# from scipy.stats import linregress
+        #plt.scatter(distances[1],slopes[1])# from scipy.stats import linregress
+        # plt.errorbar(distances, slopes, yerr = fitErrors,fmt='o',capthick=3,ms=5,uplims=True,lolims=True)
+        plt.errorbar(distances, slopes, yerr = fitErrors,fmt='o',capthick=3,ms=5)
+        ax = plt.gca()
+        ax.set_xticks(distLin)
+        plt.title("dP/dT vs Orbital Distance");
+        plt.xlabel("Distance (AU)");
+        plt.ylabel("dPdT (ppm/Kelvin)");
+        plt.show()
+
+
 
 def habitableZone(nameList,newMaxPop,newA,runTime,dA):
     fullMaxPop=0;
@@ -174,7 +571,7 @@ def habitableZone(nameList,newMaxPop,newA,runTime,dA):
         nameList['ebm']['Nmax']=newMaxPop#convert pco2 to bars
         nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
         nameList['ebm']['runTime'] = runTime#change runtime
-        dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = runProgram("driver.exe",nameList,False)#False=no output
+        dfModel, finalavgtemp, eqTime, eqTemp, equilibrium, popDeath = runProgram("driver.exe",nameList,False)#False=no output
         life = (equilibrium) and (eqTemp<=373.15) and (eqTemp>=273.15)#determine habitability
         if(life and (count==0)):#if first habitable distance, make it minA
             minA = newA
@@ -199,7 +596,7 @@ def printFolder():
         for dirname in dirs:
             print(dirname)
             
-def runProgram(driver,nameList,output,showInputs,dimVar): #run the program with the given name  
+def runProgram(driver,nameList,output,showInputs,dimVar, printOutput=True): #run the program with the given name  
     #make temporary directory to run in
     with tempfile.TemporaryDirectory() as dirpath:
         runFolder = newFolder(nameList,dirpath) #make the temporary folder
@@ -208,13 +605,13 @@ def runProgram(driver,nameList,output,showInputs,dimVar): #run the program with 
 
         if(showInputs):
             for i in nameList['ebm']:  print(i,": ",nameList['ebm'][i])
-        dfModel, finalavgtemp, eqTime, eqTemp, equilibrium = readOutput() #read output into datframe
+        dfModel, finalavgtemp, eqTime, eqTemp, equilibrium, popDeath = readOutput() #read output into datframe
         
         os.chdir(notePath)
         call("rm -rf tmp*", shell=True)#delete the temporary folder and unlink it's contents
         if(output):
             if(equilibrium):
-                if(nameList['ebm']['lverbose']):
+                if(nameList['ebm']['lverbose'] and printOutput):
 #                    print("Dimensionless Variable: ",str(round(dimVar,5)))
                     print('Final Temp(K): ' + str(finalavgtemp));
                     print('Final Temp(F): ' + str(round((finalavgtemp-273.15)*(9/5)+32, 2)));
@@ -226,8 +623,8 @@ def runProgram(driver,nameList,output,showInputs,dimVar): #run the program with 
                 print('')
      #   print('Final Temp(C): ' + str(round(finalavgtemp-273.15)));
         call("echo   ", shell=True)
-    return dfModel, finalavgtemp, eqTime, eqTemp, equilibrium
-            
+    return dfModel, finalavgtemp, eqTime, eqTemp, equilibrium, popDeath
+#---------------------------Make NameList------------------------
 def makeDefNamelist():
     nml = {
         'ebm': {
@@ -326,16 +723,22 @@ def readOutput():
         finalavgtemp=np.NaN
 #        print("Temperatures Exceeded 450 before equilibrium was reached")
         equilibrium = False
-    
+    global popDeath #how many people died after 2 generations 
     if(equilibrium):
         #read in equilibrium conditions
         eqTemp=0;
+        popDeath = 0;
         eqTime=0;
         equilibrium=open("equilibrium.dat","r")
+        counter = 0
         for line in equilibrium:
             values = line.split()
-            eqTime = float(values[0])
-            eqTemp = float(values[1])
+            if counter==0:
+                eqTime = float(values[0])
+                eqTemp = float(values[1])
+            else: 
+                popDeath = float(values[0])
+            counter += 1
     else:
         eqTemp = np.NaN
         eqTime = np.NaN
@@ -347,4 +750,4 @@ def readOutput():
     df['time_yrs'] = df['time']/60/60/24/365.25
     df['pco2_ppm'] = df['pco2']*10**6
  
-    return df, finalavgtemp, eqTime,eqTemp,equilibrium
+    return df, finalavgtemp, eqTime,eqTemp,equilibrium, popDeath
