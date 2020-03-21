@@ -54,7 +54,7 @@ c----------------------------------------------------------------------c
       real*8  ecc,m,e,counter,runTime,dtemp, dpco2
       real*8 rBirth0,rBirthMax,rDeath,opT,Npop,N0,Nmax,
      &       rGrowth, fragility, rBirth, rTech, Npoprev, 
-     &       Npeak, tPeak !Population Parameters
+     &       Npeak, tPeak, genCounter !Population Parameters
       real*8 rco2,En, En0, pco20, eqTemp, rDeath0 !Coupling Parameters
       logical :: coupled = .false.
       logical :: lverbose = .false.
@@ -97,6 +97,7 @@ c  INITIALIZE VARIABLES
       snowball = .false.   !if .true. then start as an ice-ball
       tend = 7.e11          !calculation length (sec)
       dt = 8.64e4            !time step (sec)
+      genCounter = 0
       rot0 = 7.27e-5       !Earth's present rotation rate (rad/sec)
       rot = rot0           
       a0 = 1.49597892E13   !Earth's orbit semi-major axis (cm)
@@ -138,6 +139,7 @@ c  INITIALIZE VARIABLES
       pco2 = pco20              !initial co2 concentration for this run (bars)
       oblrad = obl*pi/180
       Npop   = N0
+      opT=0
       Npoprev = Npop
       Npeak = N0
       tPeak = 0
@@ -320,6 +322,7 @@ c
          write(*,*) 'Calculation time has elapsed.'
          goto 1000
       end if
+
 c
  270  tempsum = 0.
       fluxsum = 0.
@@ -853,8 +856,8 @@ c check if equilibrium has been reached, if yes, then start coupling
      &                                '  pCO2 (bars)', 'Pop (N)'
 c
         write(11,'(f5.0,f8.3)') eqCounter,opT
-      end if
-      end if
+      end if   ! equilibrium reached!
+      end if   ! equilibrium reached?
       if(equilibrium) then
       if(coupled) then
 
@@ -870,7 +873,12 @@ c     Model 0
       if( (counter - tPeak) .ge. 500) then
         write(*,*) '25 Generations have Occured after the population'
      &                ,' peaked'
-        stop
+        goto 1000
+      end if
+      if( (counter - tPeak) .eq. 50) then
+        write(*,*) '2 Generations have Occured after the population'
+     &                ,' peaked'
+        write(11, '(7e20.10)') (Npeak-Npop)
       end if
 c     Model 1
 c      Npop = Npop + min(rBirth*Npop, rDeath*Nmax) - rDeath*Npop
@@ -884,6 +892,13 @@ c then write data to ouput file (output.dat)
       pco2=max( (pco2+(rco2*Npop)/10**6) , 0.00)
       write(10,'(7e20.10)') tcalc,ann_tempave,pco2,
      &                    Npop,rBirth,rDeath,rGrowth
+      if(.not.coupled) then
+                write(*,*) "Equilibrium was Reached and Model is"
+     &                    ," uncoupled, Quit Now"
+         !       stop
+                last = .TRUE.
+      end if   !coupled? 
+ 
       end if ! if equilibrium
 c------------------------End-of-Coupling-Stuff----------------------------------
 
