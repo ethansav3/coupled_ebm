@@ -9,6 +9,7 @@ import numpy as np
 from math import *
 import pandas as pd 
 import seaborn as sns
+import pdb
 from scipy.stats import linregress
 from statistics import *
 import shutil
@@ -20,7 +21,7 @@ notePath = os.getcwd()
 fullArr=[]
 fullArrTr = []
 fullMaxPop=0
-def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopList,distList,showInputs,experiment=1, printOutput=False, scaleInitPop=False):
+def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopList,distList,showInputs,experiment=1,analyzeVerbose=False, printOutput=False, scaleInitPop=False):
     saveName= 0
     count   = 0
     numCols = 4
@@ -36,9 +37,9 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
     eqList = []
     eqTempList = []
     eqTimeList = []
-    popDeathList = []
+    popDeathList = []       
     for j in maxPopList:#pop loops
-        newMaxPop=int(j)#change max pop
+        newMaxPop=j#change max pop
 #        newA = .9#change distance (AU)
         dA=.01
         popStats = {}
@@ -51,20 +52,6 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
             1.02 : 9.067*10**-3
             }
         if(experiment == 2):
-#             dictdTdP= {
-#             0.97 : 3.573*10**-2,
-#             1.0025 : 1.861*10**-3,
-#             1.035 : 4.297*10**-4,
-#             1.0675 : 1.464*10**-4,
-#             1.1 : 8.629*10**-5
-#             }
-#             dictPco20= {
-#             0.97 : 20,
-#             1.0025 : 2750,
-#             1.035 : 21500,
-#             1.0675 : 62500,
-#             1.1 : 130500
-#             }
             dictdTdP= {
             0.975 : 2.649*10**-1,
             1.0075 : 3.689*10**-3,
@@ -106,7 +93,7 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
                 print("Distance: " +str(round(i,4)))
                 print("Dimensionless Variable: " + str(round(dimVar,5)))
             #calculate inputs
-            newA = round(i,4) #change distance (AU)
+            newA = float(round(i,4)) #change distance (AU)
             nameList['ebm']['coupled']=coupled
             nameList['ebm']['relsolcon']=newA**-2 #inverse square law for solar flux
             nameList['ebm']['runTime'] = runTime#change runtime
@@ -123,9 +110,9 @@ def runModel(nameList, coupled, runTime, plot, save, analyze, driverName,maxPopL
             #plot the results
             if coupled and equilibrium:
                 inputRunTime = runTime #how long I originally specified
-                outputRunTime = math.ceil( dfModel['time_yrs'].iloc[-1] )#how long it actually ran
+                outputRunTime = math.ceil( dfModel['time_yrs'].iloc[-1] )#how long it actually 
                 if analyze:
-                    popStats = analyzeRun(dfModel,nameList, anthroPop, False)#if True, then Print Dictionary Values
+                    popStats = analyzeRun(dfModel,nameList, anthroPop, analyzeVerbose)#if True, then Print Dictionary Values 
                     maxTime = popStats['maxTime']                  
 #                     if outputRunTime - maxTime < 50:
 #                         print("problem occured")
@@ -255,6 +242,36 @@ def outlierFinder(tempList,eqTemp,inCount):
             return True
     else:
         return True
+def deathTimeFinder(dfModel):
+    '''Returns a list containing some death statistics.  
+    Index 0 gives the time it took for the population to decline by 10% after it peaked
+    Index 1 gives the ratio of peak population to carrying capacity'''
+    deathStatsList = []
+    maxima = dfModel.max()
+    maxPop = maxima[3]
+    maxPopIndex = dfModel.loc[dfModel['pop']==maxPop].index#search rows for index of max pop
+    maxPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
+    tenPerMaxPop = maxPop - 0.1*maxPop
+    #tenPerMaxPopIndex = dfModel.loc[dfModel['pop']==tenPerMaxPop]
+    finalPop = dfModel['pop'][dfModel.index[-1]]
+    finalTime = dfModel['time_yrs'][dfModel.index[-1]]
+    if(finalPop <= tenPerMaxPop):
+        finalIndex = dfModel.index[-1]
+        tenPerMaxPopIndex = 0
+        maxIndex = int(maxPopIndex[0])
+        for i in np.arange(maxIndex, finalIndex, 1):
+            pop = dfModel["pop"][i]
+            if(pop <= tenPerMaxPop):
+                tenPerMaxPopIndex = i
+                break
+        tenPerMaxPopTime = dfModel.iloc[tenPerMaxPopIndex]['time_yrs'];
+        dt = float(tenPerMaxPopTime) - float(maxPopTime)
+        return dt
+    if(finalPop > tenPerMaxPop):
+        gen20 = float(finalTime-maxPopTime[maxPopIndex[0]])#500 years
+        percentDeadByEnd= (1-finalPop/maxPop)*100
+        return gen20*(10/percentDeadByEnd)
+
 
 def analyzeRun(dfModel, nameList, anthroPop, verbose):
     counter = 0
@@ -265,6 +282,7 @@ def analyzeRun(dfModel, nameList, anthroPop, verbose):
    # print(finalPop)
     maxPopIndex = dfModel.loc[dfModel['pop']==maxPop].index#search rows for index of max pop
     maxPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
+    
     halfPop=maxPop/2;
     halfPopIndex = dfModel.loc[dfModel['pop']==halfPop].index#search rows for index of max pop
     halfPopTime=dfModel.iloc[maxPopIndex]['time_yrs'];#search column for time until peak pop is reached
@@ -289,14 +307,16 @@ def analyzeRun(dfModel, nameList, anthroPop, verbose):
             UhalfPop = newDF.time_yrs.iloc[-1]      #new dataframe, time column, last row
     except TypeError:
         print('')
+    tDecline = deathTimeFinder(dfModel)
     popStats={'maxPop' : (maxPop/1000), 'maxTime': maxPopTime.mean(),
               'halfPop': (halfPop/1000),'LhalfTime': LhalfPop, 'UhalfTime': UhalfPop,
               'maxPopPlot': maxPop/1000, 'finalPop': (finalPop/1000), 'initPop' : nameList['ebm']['N0'],
-              'anthroPop' :anthroPop }#maximum plotting range for population
+              'anthroPop' :anthroPop, 'tDecline': tDecline }#maximum plotting range for population
     if(verbose):
         for k,v in popStats.items():
             print(k + " = " +str(v))
     return popStats
+
 
 def regionSweep(distances, nameList, verbose=False, exp=1):
     '''Does a parameter sweep of the region of parameter
@@ -393,52 +413,73 @@ def regionSweep(distances, nameList, verbose=False, exp=1):
         dictData[outCount] = tempList
     return dictData
 
-
-def pco2Finder(goalEqTemp, nameList, distance, lverbose=False):
-    distList = np.asarray([distance])
-    maxPopList = np.asarray([10000])
+def pco2Finder(goalEqTemp, nameList, distList, maxPopList,lverbose=False):
     currEqTemp = 0
     pco20    = 10.3
+    exp=0
     nameList['ebm']['pco20'] = pco20*10**-6
     goalPco2 = 0
     plot = False
     save=False
     showInputs=False
-    analyze=False
+    analyze=True
     popDeath = []
-    dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, experiment=exp, scaleInitPop=True)
+    dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs,analyzeVerbose=False, experiment=0, scaleInitPop=True)
     if(eqTemp[0]>= goalEqTemp):
-        return np.nan
+        return np.nan, np.nan
  #   print(f"Equilbrium Reached at temp: {eqTemp:.2f}, and time: {eqTime:.0f}","\n")
     while(True):
+        currEqTemp = eqTemp[0]
         call("rm -rf tmp*",shell=True)
         if(currEqTemp >= goalEqTemp):
             goalPco2 = pco20
             break
-        if(goalEqTemp-currEqTemp > 25):
-            pco20 *= 2 #increment pco2 by 1% of its value
+        if(goalEqTemp-currEqTemp > 20):
+            if lverbose: print("\n >10 \n")
+            pco20 *= 2 
             nameList['ebm']['pco20'] = pco20*10**-6
-            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, experiment=exp, scaleInitPop=True)
-            if np.isnan(eqTemp[0]): return np.nan
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, analyzeVerbose=False,experiment=exp, scaleInitPop=True)
+            if np.isnan(eqTemp[0]): return np.nan, np.nan
             currEqTemp = eqTemp[0]
             if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp[0]:.2f}, and time: {eqTime[0]:.0f},  goalTemp: {goalEqTemp:.0f}","\n")
-        if((goalEqTemp-currEqTemp <= 25) and (goalEqTemp-currEqTemp >= 3)):
+        
+        if((goalEqTemp-currEqTemp <= 20) and (goalEqTemp-currEqTemp > 10)):
+            if lverbose: print("\n <=10,  >=5 \n")
+            pco20 += 0.5*pco20
+            nameList['ebm']['pco20'] = pco20*10**-6
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs,analyzeVerbose=False, experiment=exp, scaleInitPop=True)
+            if np.isnan(eqTemp[0]): return np.nan, np.nan
+            currEqTemp = eqTemp[0]
+            if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp[0]:.2f}, and time: {eqTime[0]:.0f},  goalTemp: {goalEqTemp:.0f}","\n")
+        
+        if((goalEqTemp-currEqTemp <= 10) and (goalEqTemp-currEqTemp > 2)):
+            if lverbose: print("\n <=5,  >=1 \n")
             pco20 += 0.1*pco20
             nameList['ebm']['pco20'] = pco20*10**-6
-            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, experiment=exp, scaleInitPop=True)
-            if np.isnan(eqTemp[0]): return np.nan
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, analyzeVerbose=False,experiment=exp, scaleInitPop=True)
+            if np.isnan(eqTemp[0]): return np.nan, np.nan
             currEqTemp = eqTemp[0]
             if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp[0]:.2f}, and time: {eqTime[0]:.0f},  goalTemp: {goalEqTemp:.0f}","\n")
-        if(goalEqTemp-currEqTemp <= 3):
-            pco20 += 0.01*pco20
+        
+        if(goalEqTemp-currEqTemp <= 2):
+            if lverbose: print("\n <= 1 \n")
+            pco20 += 0.05*pco20
             nameList['ebm']['pco20'] = pco20*10**-6
-            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, experiment=exp, scaleInitPop=True)
-            if np.isnan(eqTemp[0]): return np.nan
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, analyzeVerbose=False,experiment=exp, scaleInitPop=True)
+            if np.isnan(eqTemp[0]): return np.nan, np.nan
             currEqTemp = eqTemp[0]
             if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp[0]:.2f}, and time: {eqTime[0]:.0f},  goalTemp: {goalEqTemp:.0f}","\n")
-    return round(goalPco2,3)
+    dT = float(abs(goalEqTemp - currEqTemp))
+    return round(goalPco2,3), dT
 
-def dTdPFinder(goalPco2, distance):
+def dTdPFinder(goalPco2, distance, nameList, maxPopList):
+    plot=False
+    save=False
+    show=False
+    showInputs=False
+    exp=0
+    lverbose = False
+    analyze=False
     if not np.isnan(goalPco2):
         distList  = [distance]
         #find mean
@@ -628,8 +669,7 @@ def runProgram(driver,nameList,output,showInputs,dimVar, printOutput=False): #ru
                     print('Equilibrium Temp(F): ' + str(round((eqTemp-273.15)*(9/5)+32, 2)));
                     print('')
             else:
-                print("Equilibrium was not reached")
-                print('')
+                if printOutput: print("Equilibrium was not reached,\n")
      #   print('Final Temp(C): ' + str(round(finalavgtemp-273.15)));
         call("echo   ", shell=True)
     return dfModel, finalavgtemp, eqTime, eqTemp, equilibrium, popDeath

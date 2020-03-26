@@ -37,7 +37,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar, exp=1
      'ytick.labelsize': 25.0,
      'legend.fontsize': 14.0})
     fig, ax = plt.subplots(figsize=(10,5),dpi=200) #set up figure
-    fig.suptitle("Distance: " + str(round(inputs[0],4)) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl"+",    $\Gamma:$ " +str(round(dimVar,3)),x=.46,fontsize=19)
+    fig.suptitle("Distance: " + str(round(inputs[0],4)) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl"+",    $\gamma:$ " +str(round(dimVar,3)),x=.46,fontsize=19)
     ax.set_ylim(min(min(temp),eqTemp)-(5/100)*(max(temp)-min(temp)),finalTemp) 
     line = ax.scatter(pop,temp,c=pco2,cmap='jet')
     cbar = fig.colorbar(line)
@@ -62,7 +62,7 @@ def plotModelOutput(df,inputs,eqTime,eqTemp,popStats,save,saveName,dimVar, exp=1
     plt.close('all') 
 #----------Normal Plots----------------------------------------------------------------------------------------
     fig, (ax2, ax1) = plt.subplots(2,sharex=True,figsize=(20,10),dpi=200) #set up figure, share the x axis
-    fig.suptitle("       Distance: " + str(round(inputs[0],4)) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $\Gamma:$ " +str(round(dimVar,3)),x=.40, fontsize=32)
+    fig.suptitle("       Distance: " + str(round(inputs[0],4)) +" AU,  $Carrying\ Capacity$: " + str( '{:,}'.format(round(inputs[1]/1000)) ) +" billion ppl,  $\gamma:$ " +str(round(dimVar,3)),x=.40, fontsize=32)
      #plot time vs temp (K)
     line1 = ax1.scatter(timer,temp,c=pco2,cmap='jet')
     ax1.set_title('Temperature vs Time')
