@@ -54,7 +54,7 @@ c----------------------------------------------------------------------c
       real*8  ecc,m,e,counter,runTime,dtemp, dpco2
       real*8 rBirth0,rBirthMax,rDeath,opT,Npop,N0,Nmax,
      &       rGrowth, fragility, rBirth, rTech, Npoprev, 
-     &       Npeak, tPeak, genCounter !Population Parameters
+     &       Npeak, tPeak, genCounter, dPower !Population Parameters
       real*8 rco2,En, En0, pco20, eqTemp, rDeath0 !Coupling Parameters
       logical :: coupled = .false.
       logical :: lverbose = .false.
@@ -128,8 +128,8 @@ c  INITIALIZE VARIABLES
       nfile = 0
       counter=0
       eqCounter=0
-      NAMELIST /ebm/ a, cloudir, coupled, d0, dpco2, dt, dtemp, ecc,
-     &               En0, fcloud, fragility, groundalb, igeog, 
+      NAMELIST /ebm/ a, cloudir, coupled, d0, dpco2, dPower,dt, dtemp,
+     &               ecc, En0, fcloud, fragility, groundalb, igeog, 
      &               landsnowfrac, lverbose, N0, Nmax, obl, ocean, 
      &               opT, pco20, peri, rBirthMax, rBirth0,
      &               rco2, rDeath0, relsolcon, rot, rTech, runTime, 
@@ -708,6 +708,7 @@ c      write(*,'(a,f15.3)') ' Overall dPCO2: ', (pco2-pco20)*10**6
       write(*,'(a,f9.3,a)') ' Distance: ',sqrt(relsolcon)**(-1), " AU"
       write(*,'(a,f15.7)') ' Input dP: ', dpco2
       write(*,'(a,f15.7)') ' Input dT: ', dtemp
+      write(*,'(a,f5.0)') ' Death Power: ', dPower
 c      write(*,'(a,f9.3)') ' Max Birth Rate Specified: ',rBirthMax
 c      write(*,*) 'Max Birth Rate Reached?: ', maxReached
       zntempave(nbelts+1) = zntempave(nbelts)  !**for ice-line calculation
@@ -863,7 +864,7 @@ c
 
 c     Model 0
       rBirth = rBirth0*(1+ (pco2-pco20)/(dpco2) )
-      rDeath = rDeath0*(1+((ann_tempave-opT)/(dtemp))**2)
+      rDeath = rDeath0*(1+((ann_tempave-opT)/(dtemp))**dPower)
       Npoprev = Npop
       Npop = max(Npop+min(rBirth*Npop, rDeath0*Nmax) - rDeath*Npop,1.00)
       if( (Npop - Npoprev) .gt. 0) then
