@@ -202,7 +202,7 @@ def habitableZoneFinder_exp2(namelist, lverbose=False, showOutput=False):
             newA += dA    
     return minA, maxA
     
-def roomPco2(nameList,distList):
+def roomPco2(nameList,distList,name="driver.exe"):
     '''
     Returns value of pCO2 that will make the equilibrium
     temperature approximately room temperature.
@@ -212,7 +212,7 @@ def roomPco2(nameList,distList):
     count=0
     while(True): #find initial pco2 such that temp is > 295 (about 70 fahrenheit)
         nameList['ebm']['pco20']=pco20/10**6
-        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, coupled, runTime, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs,experiment=2)
+        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, coupled, runTime, plot, save, analyze,name,maxPopList,distList,showInputs,experiment=2)
         if(eqTemp >= 295):
             pco2Room = pco20 #the value of pco2 which makes temp be habitable for humans
             print("\n","Distance: ",round(distList[0],4),"\n Room pCO2: ", round(pco2Room,4))
@@ -413,7 +413,7 @@ def regionSweep(distances, nameList, verbose=False, exp=1):
         dictData[outCount] = tempList
     return dictData
 
-def pco2Finder(goalEqTemp, nameList, distList, maxPopList,lverbose=False):
+def pco2Finder(goalEqTemp, nameList, distList, maxPopList,lverbose=False, driver='driver.exe'):
     currEqTemp = 0
     pco20    = 10.3
     exp=0
@@ -424,7 +424,7 @@ def pco2Finder(goalEqTemp, nameList, distList, maxPopList,lverbose=False):
     showInputs=False
     analyze=True
     popDeath = []
-    dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs,analyzeVerbose=False, experiment=0, scaleInitPop=True)
+    dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,driver,maxPopList,distList,showInputs,analyzeVerbose=False, experiment=0, scaleInitPop=True)
     if(eqTemp[0]>= goalEqTemp):
         return np.nan, np.nan
  #   print(f"Equilbrium Reached at temp: {eqTemp:.2f}, and time: {eqTime:.0f}","\n")
@@ -438,7 +438,7 @@ def pco2Finder(goalEqTemp, nameList, distList, maxPopList,lverbose=False):
             if lverbose: print("\n >10 \n")
             pco20 *= 2 
             nameList['ebm']['pco20'] = pco20*10**-6
-            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, analyzeVerbose=False,experiment=exp, scaleInitPop=True)
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,driver,maxPopList,distList,showInputs, analyzeVerbose=False,experiment=exp, scaleInitPop=True)
             if np.isnan(eqTemp[0]): return np.nan, np.nan
             currEqTemp = eqTemp[0]
             if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp[0]:.2f}, and time: {eqTime[0]:.0f},  goalTemp: {goalEqTemp:.0f}","\n")
@@ -447,7 +447,7 @@ def pco2Finder(goalEqTemp, nameList, distList, maxPopList,lverbose=False):
             if lverbose: print("\n <=10,  >=5 \n")
             pco20 += 0.5*pco20
             nameList['ebm']['pco20'] = pco20*10**-6
-            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs,analyzeVerbose=False, experiment=exp, scaleInitPop=True)
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,driver,maxPopList,distList,showInputs,analyzeVerbose=False, experiment=exp, scaleInitPop=True)
             if np.isnan(eqTemp[0]): return np.nan, np.nan
             currEqTemp = eqTemp[0]
             if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp[0]:.2f}, and time: {eqTime[0]:.0f},  goalTemp: {goalEqTemp:.0f}","\n")
@@ -456,7 +456,7 @@ def pco2Finder(goalEqTemp, nameList, distList, maxPopList,lverbose=False):
             if lverbose: print("\n <=5,  >=1 \n")
             pco20 += 0.1*pco20
             nameList['ebm']['pco20'] = pco20*10**-6
-            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, analyzeVerbose=False,experiment=exp, scaleInitPop=True)
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,driver,maxPopList,distList,showInputs, analyzeVerbose=False,experiment=exp, scaleInitPop=True)
             if np.isnan(eqTemp[0]): return np.nan, np.nan
             currEqTemp = eqTemp[0]
             if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp[0]:.2f}, and time: {eqTime[0]:.0f},  goalTemp: {goalEqTemp:.0f}","\n")
@@ -465,14 +465,19 @@ def pco2Finder(goalEqTemp, nameList, distList, maxPopList,lverbose=False):
             if lverbose: print("\n <= 1 \n")
             pco20 += 0.05*pco20
             nameList['ebm']['pco20'] = pco20*10**-6
-            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, analyzeVerbose=False,experiment=exp, scaleInitPop=True)
+            dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 3000, plot, save, analyze,driver,maxPopList,distList,showInputs, analyzeVerbose=False,experiment=exp, scaleInitPop=True)
             if np.isnan(eqTemp[0]): return np.nan, np.nan
             currEqTemp = eqTemp[0]
             if lverbose: print(f"pCO20:{pco20:.3f},  Equilbrium Reached at temp: {eqTemp[0]:.2f}, and time: {eqTime[0]:.0f},  goalTemp: {goalEqTemp:.0f}","\n")
     dT = float(abs(goalEqTemp - currEqTemp))
     return round(goalPco2,3), dT
 
-def dTdPFinder(goalPco2, distance, nameList, maxPopList):
+def timeRemaining(percentDone, timeMinutes):
+    timePerPercent = timeMinutes/percentDone
+    percentLeft=100-percentDone
+    return percentLeft * timePerPercent
+
+def dTdPFinder(goalPco2, distance, nameList, maxPopList, driver="driver.exe"):
     plot=False
     save=False
     show=False
@@ -484,17 +489,17 @@ def dTdPFinder(goalPco2, distance, nameList, maxPopList):
         distList  = [distance]
         #find mean
         nameList['ebm']['pco20'] = goalPco2*10**-6
-        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, experiment=exp, printOutput=lverbose, scaleInitPop=True)
+        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,driver,maxPopList,distList,showInputs, experiment=exp, printOutput=lverbose, scaleInitPop=True)
         eqTempMean = eqTemp[0]
         #find upper bound
         pco20Plus = goalPco2 + 0.01*goalPco2 #increment pco2 by 1% of its value
         nameList['ebm']['pco20'] = pco20Plus*10**-6
-        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, experiment=exp, printOutput=lverbose, scaleInitPop=True)
+        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,driver,maxPopList,distList,showInputs, experiment=exp, printOutput=lverbose, scaleInitPop=True)
         eqTempPlus = eqTemp[0]
         #find lower bound
         pco20Minus = goalPco2 - 0.01*goalPco2 #increment pco2 by 1% of its value
         nameList['ebm']['pco20'] = pco20Minus*10**-6
-        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,"driver.exe",maxPopList,distList,showInputs, experiment=exp,printOutput=lverbose, scaleInitPop=True)
+        dfModel,dfData,eq, eqTemp, eqTime, popDeath = runModel(nameList, False, 500, plot, save, analyze,driver,maxPopList,distList,showInputs, experiment=exp,printOutput=lverbose, scaleInitPop=True)
         eqTempMinus = eqTemp[0]
         m1 = (eqTempMean - eqTempMinus)/(goalPco2 - pco20Minus)
         m2 = (eqTempPlus - eqTempMean)/(pco20Plus - goalPco2)
